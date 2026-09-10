@@ -6,6 +6,19 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 const supabase = (supabaseUrl && supabaseKey) ? createClient(supabaseUrl, supabaseKey) : null;
 
+// 常用旅遊 Emoji 清單
+const PRESET_EMOJIS = ['✈️', '🏨', '🍜', '🗺️', '🎫'];
+
+// 符合比例的 6 大精選旅遊背景圖片（東京、首爾、台北、泰國、歐洲、通用）
+const PRESET_BG_IMAGES = [
+  { name: "🇯🇵 東京", url: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1200&q=80" },
+  { name: "🇰🇷 首爾", url: "https://images.unsplash.com/photo-1538485399081-0d32f6cb0ebe?auto=format&fit=crop&w=1200&q=80" },
+  { name: "🇹🇼 台北", url: "https://images.unsplash.com/photo-1508804039833-3c58c2f1f33f?auto=format&fit=crop&w=1200&q=80" },
+  { name: "🇹🇭 泰國", url: "https://images.unsplash.com/photo-1552465011-b4e21bf6e79a?auto=format&fit=crop&w=1200&q=80" },
+  { name: "🇪🇺 歐洲", url: "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?auto=format&fit=crop&w=1200&q=80" },
+  { name: "🌍 通用", url: "https://images.unsplash.com/photo-1488646953014-85cb44e25828?auto=format&fit=crop&w=1200&q=80" }
+];
+
 const COUNTRY_APPS = {
   kr: {
     name: "🇰🇷 韓國",
@@ -46,6 +59,7 @@ export default function App() {
   const [activeCapsuleId, setActiveCapsuleId] = useState(null);
   const [activeItemId, setActiveItemId] = useState(null);
   const [isEditingItem, setIsEditingItem] = useState(false);
+  const [isEditingCapsule, setIsEditingCapsule] = useState(false); // 編輯包裝名稱/Emoji
 
   // Modals
   const [configModalOpen, setConfigModalOpen] = useState(false);
@@ -56,6 +70,8 @@ export default function App() {
 
   // 表單暫存
   const [newCapsuleTitle, setNewCapsuleTitle] = useState('');
+  const [newCapsuleEmoji, setNewCapsuleEmoji] = useState('📦');
+  const [newCapsuleBgUrl, setNewCapsuleBgUrl] = useState('');
   const [newCapsuleBgFile, setNewCapsuleBgFile] = useState(null);
   const [updateBgFile, setUpdateBgFile] = useState(null);
 
@@ -66,6 +82,7 @@ export default function App() {
   const [itemContent, setItemContent] = useState('');
   const [appCountry, setAppCountry] = useState('kr');
   const [appScheme, setAppScheme] = useState(COUNTRY_APPS.kr.apps[0].scheme);
+  const [isCustomScheme, setIsCustomScheme] = useState(false); // 是否選擇自選 App Scheme
   const [customAppInput, setCustomAppInput] = useState('');
   const [modalError, setModalError] = useState(false);
 
@@ -74,6 +91,7 @@ export default function App() {
 
   // 拖曳排序暫存
   const draggedIndexRef = useRef(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null); // 用於即時視覺提示
 
   useEffect(() => {
     if (!supabase) {
@@ -107,7 +125,7 @@ export default function App() {
     const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 9)}.${fileExt}`;
 
     const { error: uploadError } = await supabase.storage
-      .from('travel-photos') // 對應你在 Supabase 建立的 Bucket 名稱
+      .from('travel-photos')
       .upload(fileName, file);
 
     if (uploadError) {
@@ -130,7 +148,7 @@ export default function App() {
       return;
     }
 
-    let bgUrl = '';
+    let bgUrl = newCapsuleBgUrl;
     if (newCapsuleBgFile) {
       bgUrl = await uploadImageToStorage(newCapsuleBgFile);
     }
@@ -138,6 +156,7 @@ export default function App() {
     const newCap = {
       id: Date.now().toString(),
       title: newCapsuleTitle.trim(),
+      emoji: newCapsuleEmoji.trim() || '📦',
       bg_url: bgUrl,
       items: [],
       sort_order: capsules.length
@@ -151,6 +170,8 @@ export default function App() {
 
     setCapsuleModalOpen(false);
     setNewCapsuleTitle('');
+    setNewCapsuleEmoji('📦');
+    setNewCapsuleBgUrl('');
     setNewCapsuleBgFile(null);
     await fetchCapsules();
     setActiveCapsuleId(newCap.id);
@@ -158,12 +179,16 @@ export default function App() {
   };
 
   // 更新背景照片
-  const handleUpdateBg = async () => {
-    if (!updateBgFile) {
-      alert('請先選擇一張照片');
+  const handleUpdateBg = async (bgUrlInput = '') => {
+    let bgUrl = bgUrlInput;
+    if (updateBgFile) {
+      bgUrl = await uploadImageToStorage(updateBgFile);
+    }
+    if (!bgUrl) {
+      alert('請先選擇一張照片或點選預設圖片');
       return;
     }
-    const bgUrl = await uploadImageToStorage(updateBgFile);
+
     const { error } = await supabase
       .from('capsules')
       .update({ bg_url: bgUrl })
@@ -201,7 +226,7 @@ export default function App() {
 
     let content = '';
     if (itemType === 'app') {
-      content = customAppInput.trim() ? customAppInput.trim() : appScheme;
+      content = isCustomScheme ? customAppInput.trim() : appScheme;
     } else {
       content = itemContent.trim();
     }
@@ -239,6 +264,7 @@ export default function App() {
     setItemName('');
     setItemContent('');
     setCustomAppInput('');
+    setIsCustomScheme(false);
     await fetchCapsules();
   };
 
@@ -248,25 +274,29 @@ export default function App() {
     setConfirmModalOpen(true);
   };
 
-  // 拖拉排序邏輯 (具備插入線提示)
+  // 優化版拖拉排序邏輯
   const handleDragStart = (e, index) => {
     draggedIndexRef.current = index;
     e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => {
+      e.target.classList.add('opacity-40');
+    }, 0);
   };
 
-  const handleDragOver = (e, itemEl) => {
+  const handleDragEnd = (e) => {
+    e.target.classList.remove('opacity-40');
+    setDragOverIndex(null);
+  };
+
+  const handleDragOver = (e, index, itemEl) => {
     e.preventDefault();
     const rect = itemEl.getBoundingClientRect();
     const midpoint = rect.top + rect.height / 2;
     
-    document.querySelectorAll('.sortable-item').forEach(el => {
-      el.classList.remove('border-t-4', 'border-blue-500', 'border-b-4');
-    });
-
     if (e.clientY < midpoint) {
-      itemEl.classList.add('border-t-4', 'border-blue-500');
+      setDragOverIndex(`top-${index}`);
     } else {
-      itemEl.classList.add('border-b-4', 'border-blue-500');
+      setDragOverIndex(`bottom-${index}`);
     }
   };
 
@@ -308,9 +338,7 @@ export default function App() {
       await fetchCapsules();
     }
     draggedIndexRef.current = null;
-    document.querySelectorAll('.sortable-item').forEach(el => {
-      el.classList.remove('border-t-4', 'border-blue-500', 'border-b-4');
-    });
+    setDragOverIndex(null);
   };
 
   return (
@@ -324,13 +352,19 @@ export default function App() {
             <p className="text-xs sm:text-sm text-slate-500">React + Supabase 雲端資料庫版</p>
           </div>
           <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
-            <button onClick={fetchCapsules} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition">
+            <button onClick={fetchCapsules} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition active:scale-95">
               🔄 同步
             </button>
-            <button onClick={() => setConfigModalOpen(true)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition">
+            <button onClick={() => setConfigModalOpen(true)} className="bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition active:scale-95">
               ⚙️ 設定說明
             </button>
-            <button onClick={() => setCapsuleModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition shadow-sm">
+            <button onClick={() => {
+              setNewCapsuleTitle('');
+              setNewCapsuleEmoji('📦');
+              setNewCapsuleBgUrl('');
+              setNewCapsuleBgFile(null);
+              setCapsuleModalOpen(true);
+            }} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-xs sm:text-sm font-medium transition shadow-sm active:scale-95">
               + 新旅行包裝
             </button>
           </div>
@@ -358,32 +392,45 @@ export default function App() {
                 {capsules.map((cap, index) => {
                   const itemCount = (cap.items || []).length;
                   const bgStyle = cap.bg_url ? {
-                    backgroundImage: `linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.5)), url('${cap.bg_url}')`,
+                    backgroundImage: `linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.55)), url('${cap.bg_url}')`,
                     backgroundSize: 'cover',
                     backgroundPosition: 'center'
                   } : {};
                   const textColor = cap.bg_url ? 'text-white' : 'text-slate-800';
                   const subColor = cap.bg_url ? 'text-slate-200' : 'text-slate-400';
 
+                  const isTopBorder = dragOverIndex === `top-${index}`;
+                  const isBottomBorder = dragOverIndex === `bottom-${index}`;
+
                   return (
                     <div
                       key={cap.id}
                       draggable
                       onDragStart={(e) => handleDragStart(e, index)}
-                      onDragOver={(e) => handleDragOver(e, e.currentTarget)}
+                      onDragEnd={handleDragEnd}
+                      onDragOver={(e) => handleDragOver(e, index, e.currentTarget)}
                       onDrop={(e) => handleDrop(e, index, 'capsules')}
                       onClick={() => { setActiveCapsuleId(cap.id); setCurrentView('detail'); }}
                       style={bgStyle}
-                      className="sortable-item bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm hover:shadow-md transition flex justify-between items-center group cursor-pointer relative overflow-hidden"
+                      className={`bg-white p-5 rounded-2xl border transition shadow-sm hover:shadow-md flex justify-between items-center group cursor-pointer relative overflow-hidden ${
+                        isTopBorder ? 'border-t-4 border-blue-500' : isBottomBorder ? 'border-b-4 border-blue-500' : 'border-slate-200/80'
+                      }`}
                     >
-                      <div className="flex items-center space-x-3 overflow-hidden z-10">
-                        <span className={`cursor-move px-2 py-1 text-base select-none font-bold ${cap.bg_url ? 'text-white/70 hover:text-white' : 'text-slate-300 hover:text-slate-600'}`} title="按住拖拉">☰</span>
+                      <div className="flex items-center space-x-3.5 overflow-hidden z-10">
+                        <span 
+                          className={`cursor-grab active:cursor-grabbing px-2 py-1 text-lg select-none font-bold transition ${cap.bg_url ? 'text-white/70 hover:text-white' : 'text-slate-300 hover:text-slate-600'}`} 
+                          title="按住上下拖拉排序"
+                          onMouseDown={(e) => e.stopPropagation()}
+                        >
+                          ☰
+                        </span>
+                        <span className="text-2xl shrink-0">{cap.emoji || '📦'}</span>
                         <div className="truncate">
                           <h2 className={`font-bold ${textColor} text-base transition truncate`}>{cap.title}</h2>
-                          <p className={`text-xs ${subColor} mt-0.5`}>包含 {itemCount} 項資源與 App 捷徑</p>
+                          <p className={`text-xs ${subColor} mt-0.5`}>包含 {itemCount} 項資源與捷徑</p>
                         </div>
                       </div>
-                      <span className={`${textColor} font-bold text-lg shrink-0 ml-2 z-10`}>›</span>
+                      <span className={`${textColor} font-bold text-lg shrink-0 ml-2 z-10 group-hover:translate-x-1 transition-transform`}>›</span>
                     </div>
                   );
                 })}
@@ -417,7 +464,57 @@ export default function App() {
                 </div>
               </div>
 
-              <h2 className="text-lg font-bold text-slate-800 mb-4">{target.title}</h2>
+              {/* 包裝標題與 Emoji 顯示 / 編輯區 */}
+              <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm mb-4 flex justify-between items-center">
+                {!isEditingCapsule ? (
+                  <div className="flex items-center space-x-3">
+                    <span className="text-3xl">{target.emoji || '📦'}</span>
+                    <h2 className="text-lg font-bold text-slate-800">{target.title}</h2>
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-2 flex-1 mr-2">
+                    <input 
+                      type="text" 
+                      id="editCapsuleEmoji" 
+                      defaultValue={target.emoji || '📦'} 
+                      maxLength={2} 
+                      className="w-14 border rounded-xl px-2 py-1.5 text-center text-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                    />
+                    <input 
+                      type="text" 
+                      id="editCapsuleTitle" 
+                      defaultValue={target.title} 
+                      className="flex-1 border rounded-xl px-3 py-1.5 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                    />
+                  </div>
+                )}
+
+                <div>
+                  {!isEditingCapsule ? (
+                    <button onClick={() => setIsEditingCapsule(true)} className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl font-bold transition">
+                      ✏️ 編輯
+                    </button>
+                  ) : (
+                    <button onClick={async () => {
+                      const newTitle = document.getElementById('editCapsuleTitle').value.trim();
+                      const newEmoji = document.getElementById('editCapsuleEmoji').value.trim() || '📦';
+                      if (!newTitle) { alert('包裝名稱不得為空！'); return; }
+
+                      const { error } = await supabase
+                        .from('capsules')
+                        .update({ title: newTitle, emoji: newEmoji })
+                        .eq('id', target.id);
+
+                      if (!error) {
+                        setIsEditingCapsule(false);
+                        await fetchCapsules();
+                      }
+                    }} className="text-xs bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-xl font-bold transition shadow-sm">
+                      💾 儲存
+                    </button>
+                  )}
+                </div>
+              </div>
 
               <div className="space-y-3 mb-4">
                 {(!target.items || target.items.length === 0) ? (
@@ -426,29 +523,41 @@ export default function App() {
                   target.items.map((item, index) => {
                     let actionHtml = null;
                     if (item.type === 'link') {
-                      actionHtml = <a href={item.content} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl font-medium">開啟</a>;
+                      actionHtml = <a href={item.content} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-xl font-medium hover:bg-blue-100">開啟</a>;
                     } else if (item.type === 'app') {
-                      actionHtml = <a href={item.content} onClick={(e) => e.stopPropagation()} className="text-xs bg-purple-50 text-purple-600 px-3 py-1.5 rounded-xl font-medium">喚醒 App</a>;
+                      actionHtml = <a href={item.content} onClick={(e) => e.stopPropagation()} className="text-xs bg-purple-50 text-purple-600 px-3 py-1.5 rounded-xl font-medium hover:bg-purple-100">喚醒 App</a>;
                     } else if (item.type === 'file') {
                       actionHtml = item.content.startsWith('http') ?
-                        <a href={item.content} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-xs bg-amber-50 text-amber-600 px-3 py-1.5 rounded-xl font-medium">開啟檔案</a> :
+                        <a href={item.content} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-xs bg-amber-50 text-amber-600 px-3 py-1.5 rounded-xl font-medium hover:bg-amber-100">開啟檔案</a> :
                         <span className="text-xs bg-amber-50 text-amber-600 px-2.5 py-1 rounded-xl font-mono">路徑</span>;
                     } else if (item.type === 'note') {
                       actionHtml = <span className="text-xs bg-emerald-50 text-emerald-600 px-2.5 py-1 rounded-xl">備忘</span>;
                     }
+
+                    const isTopBorder = dragOverIndex === `top-${index}`;
+                    const isBottomBorder = dragOverIndex === `bottom-${index}`;
 
                     return (
                       <div
                         key={item.id}
                         draggable
                         onDragStart={(e) => handleDragStart(e, index)}
-                        onDragOver={(e) => handleDragOver(e, e.currentTarget)}
+                        onDragEnd={handleDragEnd}
+                        onDragOver={(e) => handleDragOver(e, index, e.currentTarget)}
                         onDrop={(e) => handleDrop(e, index, 'items')}
                         onClick={() => { setActiveItemId(item.id); setCurrentView('itemDetail'); setIsEditingItem(false); }}
-                        className="sortable-item flex items-center justify-between p-3.5 bg-white rounded-2xl border border-slate-100 shadow-sm hover:border-blue-300 transition cursor-pointer group"
+                        className={`flex items-center justify-between p-3.5 bg-white rounded-2xl border shadow-sm transition cursor-pointer group ${
+                          isTopBorder ? 'border-t-4 border-blue-500' : isBottomBorder ? 'border-b-4 border-blue-500' : 'border-slate-100 hover:border-blue-300'
+                        }`}
                       >
                         <div className="flex items-center space-x-3 overflow-hidden mr-2">
-                          <span className="text-slate-300 hover:text-slate-600 cursor-move px-2 py-1 text-sm select-none font-bold" title="按住拖拉">☰</span>
+                          <span 
+                            className="text-slate-300 hover:text-slate-600 cursor-grab active:cursor-grabbing px-2 py-1 text-sm select-none font-bold" 
+                            title="按住上下拖拉排序"
+                            onMouseDown={(e) => e.stopPropagation()}
+                          >
+                            ☰
+                          </span>
                           <span className="text-base shrink-0">{item.emoji || '🌐'}</span>
                           <div className="truncate">
                             <p className="text-xs font-bold text-slate-700 group-hover:text-blue-600 truncate">{item.name}</p>
@@ -464,7 +573,7 @@ export default function App() {
                               await supabase.from('capsules').update({ items: updatedItems }).eq('id', target.id);
                               await fetchCapsules();
                             });
-                          }} className="text-slate-300 hover:text-red-500 px-1 text-base">×</button>
+                          }} className="text-slate-300 hover:text-red-500 px-1.5 py-0.5 text-base rounded-lg hover:bg-red-50 transition">×</button>
                         </div>
                       </div>
                     );
@@ -472,7 +581,7 @@ export default function App() {
                 )}
               </div>
 
-              <button onClick={() => { setItemName(''); setItemContent(''); setItemModalOpen(true); }} className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-xs font-bold shadow-sm transition">
+              <button onClick={() => { setItemName(''); setItemContent(''); setItemEmoji('🌐'); setItemModalOpen(true); }} className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-xs font-bold shadow-sm transition active:scale-[0.99]">
                 + 新增資源 / 喚醒 App 到此包裝
               </button>
             </div>
@@ -575,21 +684,51 @@ VITE_SUPABASE_ANON_KEY=你的專案Anon_Key`}
         </div>
       )}
 
+      {/* 建立新旅行包裝 Modal */}
       {capsuleModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl p-5 sm:p-6 w-full max-w-md shadow-xl my-auto">
-            <h3 className="text-base sm:text-lg font-bold mb-4">建立新的旅行包裝</h3>
-            <div className="space-y-3 mb-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">包裝名稱</label>
-                <input type="text" value={newCapsuleTitle} onChange={(e) => setNewCapsuleTitle(e.target.value)} placeholder="例如：2026 首爾自由行 🇰🇷" className="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <div className="bg-white rounded-2xl p-5 sm:p-6 w-full max-w-md shadow-xl my-auto max-h-[90vh] flex flex-col">
+            <h3 className="text-base sm:text-lg font-bold mb-3">建立新的旅行包裝</h3>
+            
+            <div className="space-y-3 mb-4 overflow-y-auto flex-1 pr-1">
+              <div className="flex space-x-2">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">Emoji</label>
+                  <input type="text" value={newCapsuleEmoji} onChange={(e) => setNewCapsuleEmoji(e.target.value)} maxLength={2} className="w-16 border rounded-lg px-2 py-2 text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">包裝名稱</label>
+                  <input type="text" value={newCapsuleTitle} onChange={(e) => setNewCapsuleTitle(e.target.value)} placeholder="例如：2026 首爾自由行 🇰🇷" className="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
               </div>
+
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">背景照片上傳 (支援 iPhone 相簿/HEIC)</label>
-                <input type="file" accept="image/*,.heic,.heif" onChange={(e) => setNewCapsuleBgFile(e.target.files[0])} className="w-full border rounded-lg px-3 py-2 text-xs text-slate-500 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                <label className="block text-xs font-semibold text-slate-500 mb-1">選擇精選背景圖片 (東京、首爾、台北、泰國、歐洲、通用)</label>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 mb-2">
+                  {PRESET_BG_IMAGES.map((img, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => { setNewCapsuleBgUrl(img.url); setNewCapsuleBgFile(null); }}
+                      className={`h-16 rounded-lg overflow-hidden border-2 relative transition ${newCapsuleBgUrl === img.url ? 'border-blue-600 ring-2 ring-blue-300' : 'border-slate-200 hover:opacity-80'}`}
+                      title={img.name}
+                    >
+                      <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
+                      <div className="absolute inset-x-0 bottom-0 bg-black/50 text-[10px] text-white text-center py-0.5 truncate">{img.name}</div>
+                    </button>
+                  ))}
+                </div>
+                {newCapsuleBgUrl && (
+                  <p className="text-[11px] text-blue-600 mb-2">✓ 已選擇精選背景圖</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-500 mb-1">或自行上傳背景照片 (支援 iPhone / HEIC)</label>
+                <input type="file" accept="image/*,.heic,.heif" onChange={(e) => { setNewCapsuleBgFile(e.target.files[0]); setNewCapsuleBgUrl(''); }} className="w-full border rounded-lg px-3 py-2 text-xs text-slate-500 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
               </div>
             </div>
-            <div className="flex justify-end space-x-2">
+
+            <div className="flex justify-end space-x-2 pt-3 border-t border-slate-100 shrink-0">
               <button onClick={() => setCapsuleModalOpen(false)} className="px-4 py-2 text-xs sm:text-sm text-slate-600 hover:bg-slate-100 rounded-lg">取消</button>
               <button onClick={handleCreateCapsule} className="px-4 py-2 text-xs sm:text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700">建立</button>
             </div>
@@ -597,25 +736,46 @@ VITE_SUPABASE_ANON_KEY=你的專案Anon_Key`}
         </div>
       )}
 
+      {/* 編輯背景照片 Modal */}
       {editBgModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl p-5 sm:p-6 w-full max-w-md shadow-xl my-auto">
             <h3 className="text-base sm:text-lg font-bold mb-2">🖼️ 設定行程背景照片</h3>
-            <p className="text-xs text-slate-500 mb-4">選擇一張代表這個行程的照片。</p>
+            <p className="text-xs text-slate-500 mb-3">選擇精選圖片或自訂上傳一張代表這個行程的照片。</p>
+            
             <div className="space-y-3 mb-4">
-              <input type="file" accept="image/*,.heic,.heif" onChange={(e) => setUpdateBgFile(e.target.files[0])} className="w-full border rounded-lg px-3 py-2 text-xs text-slate-500 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                {PRESET_BG_IMAGES.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => handleUpdateBg(img.url)}
+                    className="h-16 rounded-lg overflow-hidden border-2 border-slate-200 hover:border-blue-600 transition relative group"
+                    title={img.name}
+                  >
+                    <img src={img.url} alt={img.name} className="w-full h-full object-cover group-hover:scale-110 transition duration-300" />
+                    <div className="absolute inset-x-0 bottom-0 bg-black/50 text-[10px] text-white text-center py-0.5 truncate">{img.name}</div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="pt-2 border-t border-slate-100">
+                <label className="block text-xs font-semibold text-slate-500 mb-1">自訂上傳照片</label>
+                <input type="file" accept="image/*,.heic,.heif" onChange={(e) => setUpdateBgFile(e.target.files[0])} className="w-full border rounded-lg px-3 py-2 text-xs text-slate-500 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 mb-2" />
+              </div>
             </div>
-            <div className="flex justify-between items-center">
+
+            <div className="flex justify-between items-center pt-2 border-t border-slate-100">
               <button onClick={handleRemoveBg} className="text-xs text-red-500 hover:underline">移除背景圖</button>
               <div className="flex space-x-2">
                 <button onClick={() => setEditBgModalOpen(false)} className="px-4 py-2 text-xs text-slate-600 hover:bg-slate-100 rounded-lg">取消</button>
-                <button onClick={handleUpdateBg} className="px-4 py-2 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700">上傳更新</button>
+                <button onClick={() => handleUpdateBg()} className="px-4 py-2 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700">上傳更新</button>
               </div>
             </div>
           </div>
         </div>
       )}
 
+      {/* 新增資源 Modal */}
       {itemModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl p-5 sm:p-6 w-full max-w-md shadow-xl my-auto max-h-[90vh] flex flex-col">
@@ -624,9 +784,22 @@ VITE_SUPABASE_ANON_KEY=你的專案Anon_Key`}
             
             <div className="space-y-3 mb-4 overflow-y-auto flex-1 pr-1">
               <div>
-                <label className="block text-xs font-semibold text-slate-500 mb-1">自訂 Emoji 圖示</label>
-                <input type="text" value={itemEmoji} onChange={(e) => setItemEmoji(e.target.value)} maxLength={2} className="w-16 border rounded-lg px-3 py-2 text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <label className="block text-xs font-semibold text-slate-500 mb-1">圖示 Emoji (點選常用或自打)</label>
+                <div className="flex items-center space-x-2 mb-1.5">
+                  {PRESET_EMOJIS.map((emoji, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setItemEmoji(emoji)}
+                      className={`w-9 h-9 rounded-xl border text-base flex items-center justify-center transition ${itemEmoji === emoji ? 'bg-blue-50 border-blue-500 ring-2 ring-blue-100' : 'bg-slate-50 border-slate-200 hover:bg-slate-100'}`}
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+                <input type="text" value={itemEmoji} onChange={(e) => setItemEmoji(e.target.value)} maxLength={2} className="w-16 border rounded-lg px-3 py-1.5 text-center text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
+
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1">資源類型</label>
                 <select value={itemType} onChange={(e) => setItemType(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm bg-white">
@@ -636,6 +809,7 @@ VITE_SUPABASE_ANON_KEY=你的專案Anon_Key`}
                   <option value="note">📝 隨手筆記/資訊</option>
                 </select>
               </div>
+
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1">名稱 / 標題</label>
                 <input type="text" value={itemName} onChange={(e) => setItemName(e.target.value)} placeholder="例如：Naver Map 導航" className="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
@@ -648,21 +822,35 @@ VITE_SUPABASE_ANON_KEY=你的專案Anon_Key`}
                     const c = e.target.value;
                     setAppCountry(c);
                     setAppScheme(COUNTRY_APPS[c].apps[0].scheme);
+                    setIsCustomScheme(false);
                   }} className="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm bg-white mb-2">
                     <option value="kr">🇰🇷 韓國</option>
                     <option value="jp">🇯🇵 日本</option>
                     <option value="global">🌍 通用 / 其他</option>
                   </select>
 
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">2. 選擇常用 App</label>
-                  <select value={appScheme} onChange={(e) => setAppScheme(e.target.value)} className="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm bg-white mb-2">
+                  <label className="block text-xs font-semibold text-slate-500 mb-1">2. 選擇 App</label>
+                  <select value={isCustomScheme ? 'custom' : appScheme} onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === 'custom') {
+                      setIsCustomScheme(true);
+                    } else {
+                      setIsCustomScheme(false);
+                      setAppScheme(val);
+                    }
+                  }} className="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm bg-white mb-2">
                     {COUNTRY_APPS[appCountry].apps.map((app, idx) => (
                       <option key={idx} value={app.scheme}>{app.name}</option>
                     ))}
+                    <option value="custom">✏️ 自選 / 手動輸入其他 Scheme</option>
                   </select>
 
-                  <label className="block text-xs font-semibold text-slate-500 mb-1">3. 或手動輸入自訂 Scheme (選填)</label>
-                  <input type="text" value={customAppInput} onChange={(e) => setCustomAppInput(e.target.value)} placeholder="例如：instagram://" className="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  {isCustomScheme && (
+                    <div>
+                      <label className="block text-xs font-semibold text-blue-600 mb-1">3. 手動輸入自訂 Scheme</label>
+                      <input type="text" value={customAppInput} onChange={(e) => setCustomAppInput(e.target.value)} placeholder="例如：instagram://" className="w-full border rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div>
