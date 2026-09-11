@@ -424,6 +424,8 @@ export default function App() {
 
   // 桌面端滑鼠拖曳排序 (HTML5 Drag & Drop)
   const handleDragStart = (e, index) => {
+    isDraggingRef.current = true;
+    document.body.style.overflow = 'hidden';
     draggedIndexRef.current = index;
     e.dataTransfer.effectAllowed = 'move';
     setTimeout(() => {
@@ -432,6 +434,8 @@ export default function App() {
   };
 
   const handleDragEnd = (e) => {
+    isDraggingRef.current = false;
+    document.body.style.overflow = 'auto';
     e.target.classList.remove('opacity-40');
     setDragOverIndex(null);
     if (autoScrollIntervalRef.current) {
@@ -470,6 +474,7 @@ export default function App() {
   // 行動裝置觸控排序 (Touch Events)
   const handleTouchStart = (e, index) => {
     isDraggingRef.current = true;
+    document.body.style.overflow = 'hidden';
     draggedIndexRef.current = index;
   };
 
@@ -508,6 +513,7 @@ export default function App() {
 
   const handleTouchEnd = async (e, type) => {
     isDraggingRef.current = false;
+    document.body.style.overflow = 'auto';
     if (autoScrollIntervalRef.current) {
       clearInterval(autoScrollIntervalRef.current);
       autoScrollIntervalRef.current = null;
@@ -679,7 +685,7 @@ export default function App() {
                           transition: 'transform 0.25s ease-in-out'
                         }}
                         className={`${cap.bg_url ? '' : 'bg-white'} p-5 border relative z-10 cursor-pointer flex justify-between items-center touch-manipulation ${
-                          isTopBorder ? 'border-t-4 border-[#C0624A] scale-[1.01]' : isBottomBorder ? 'border-b-4 border-[#C0624A] scale-[1.01]' : 'border-[#7A8A6A]/20'
+                          isTopBorder ? 'border-t-[3px] border-[#C0624A] bg-[#C0624A]/10 scale-[1.01]' : isBottomBorder ? 'border-b-[3px] border-[#C0624A] bg-[#C0624A]/10 scale-[1.01]' : 'border-[#7A8A6A]/20'
                         }`}
                       >
                         <div className="flex items-center space-x-3.5 overflow-hidden z-10">
@@ -840,7 +846,6 @@ export default function App() {
                         onDragOver={(e) => itemSortMode === 'manual' && handleDragOver(e, index, e.currentTarget)}
                         onDrop={(e) => itemSortMode === 'manual' && handleDrop(e, index, 'items')}
                         onTouchStart={(e) => {
-                          // 如果不是點擊拖曳鈕，才啟動長按複製
                           if (!isDraggingRef.current) {
                             longPressTimerRef.current = setTimeout(() => {
                               if (!isDraggingRef.current) {
@@ -903,7 +908,7 @@ export default function App() {
                           }
                         }}
                         className={`flex items-center justify-between p-3.5 bg-white rounded-2xl border shadow-sm transition-all duration-200 cursor-pointer group relative transform text-[#3A4F41] touch-manipulation ${
-                          isTopBorder ? 'border-t-4 border-[#C0624A] scale-[1.01]' : isBottomBorder ? 'border-b-4 border-[#C0624A] scale-[1.01]' : 'border-[#7A8A6A]/20 hover:border-[#C0624A]'
+                          isTopBorder ? 'border-t-[3px] border-[#C0624A] bg-[#C0624A]/10 scale-[1.01]' : isBottomBorder ? 'border-b-[3px] border-[#C0624A] bg-[#C0624A]/10 scale-[1.01]' : 'border-[#7A8A6A]/20 hover:border-[#C0624A]'
                         }`}
                       >
                         <div className="flex items-center space-x-3 overflow-hidden mr-2">
