@@ -177,29 +177,40 @@ export default function App() {
   // 拖曳排序與自動滾動參照
   const draggedIndexRef = useRef(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
-  const autoScrollIntervalRef = useRef(null);
+  const autoScrollRafRef = useRef(null);
+  const autoScrollClientYRef = useRef(null);
 
-  const AUTO_SCROLL_EDGE = 80;   // 距離畫面邊緣多少 px 開始觸發
-  const AUTO_SCROLL_SPEED = 6;   // 每次捲動的像素數（放慢速度）
+  const AUTO_SCROLL_EDGE = 80;   // 距離邊緣多少 px 開始觸發
+  const AUTO_SCROLL_SPEED = 6;   // 每次捲動的像素數
 
   const stopAutoScroll = () => {
-    if (autoScrollIntervalRef.current) {
-      clearInterval(autoScrollIntervalRef.current);
-      autoScrollIntervalRef.current = null;
+    if (autoScrollRafRef.current) {
+      cancelAnimationFrame(autoScrollRafRef.current);
+      autoScrollRafRef.current = null;
     }
+    autoScrollClientYRef.current = null;
   };
 
-  const updateAutoScroll = (clientY) => {
-    stopAutoScroll();
+  const autoScrollStep = () => {
+    const clientY = autoScrollClientYRef.current;
+    if (clientY == null) {
+      autoScrollRafRef.current = null;
+      return;
+    }
     const windowHeight = window.innerHeight;
     if (clientY < AUTO_SCROLL_EDGE) {
-      autoScrollIntervalRef.current = setInterval(() => {
-        window.scrollBy({ top: -AUTO_SCROLL_SPEED, behavior: 'auto' });
-      }, 30);
+      window.scrollBy(0, -AUTO_SCROLL_SPEED);
     } else if (clientY > windowHeight - AUTO_SCROLL_EDGE) {
-      autoScrollIntervalRef.current = setInterval(() => {
-        window.scrollBy({ top: AUTO_SCROLL_SPEED, behavior: 'auto' });
-      }, 30);
+      window.scrollBy(0, AUTO_SCROLL_SPEED);
+    }
+    autoScrollRafRef.current = requestAnimationFrame(autoScrollStep);
+  };
+
+  // 拖曳中持續更新目前手指/滑鼠的 Y 座標，讓 rAF 迴圈讀取
+  const updateAutoScroll = (clientY) => {
+    autoScrollClientYRef.current = clientY;
+    if (!autoScrollRafRef.current) {
+      autoScrollRafRef.current = requestAnimationFrame(autoScrollStep);
     }
   };
 
@@ -461,6 +472,7 @@ export default function App() {
   const handleDragStart = (e, index) => {
     isDraggingRef.current = true;
     draggedIndexRef.current = index;
+    document.body.style.touchAction = 'none';
     e.dataTransfer.effectAllowed = 'move';
     setTimeout(() => {
       e.target.classList.add('opacity-40');
@@ -471,6 +483,7 @@ export default function App() {
     isDraggingRef.current = false;
     e.target.classList.remove('opacity-40');
     setDragOverIndex(null);
+    document.body.style.touchAction = '';
     stopAutoScroll();
   };
 
@@ -508,6 +521,7 @@ export default function App() {
   const handleTouchStart = (e, index) => {
     isDraggingRef.current = true;
     draggedIndexRef.current = index;
+    document.body.style.touchAction = 'none';
   };
 
   const handleTouchMove = (e, type, listLength) => {
@@ -536,21 +550,22 @@ export default function App() {
 
   const handleTouchEnd = async (e, type) => {
     isDraggingRef.current = false;
+    document.body.style.touchAction = '';
     stopAutoScroll();
-
+  
     const draggedIdx = draggedIndexRef.current;
     if (draggedIdx === null) return;
-
+  
     if (dragOverIndex) {
       const [position, targetIdxStr] = dragOverIndex.split('-');
       let targetIdx = parseInt(targetIdxStr, 10);
       if (position === 'bottom') targetIdx += 1;
-
+  
       if (draggedIdx !== targetIdx && draggedIdx !== targetIdx - 1) {
         await executeReorder(draggedIdx, targetIdx, type);
       }
     }
-
+  
     draggedIndexRef.current = null;
     setDragOverIndex(null);
   };
