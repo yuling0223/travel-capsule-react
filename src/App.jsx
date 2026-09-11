@@ -180,8 +180,9 @@ export default function App() {
   const autoScrollRafRef = useRef(null);
   const autoScrollClientYRef = useRef(null);
 
-  const AUTO_SCROLL_EDGE = 80;   // 距離邊緣多少 px 開始觸發
-  const AUTO_SCROLL_SPEED = 6;   // 每次捲動的像素數
+  const AUTO_SCROLL_EDGE = 90;        // 距離邊緣多少 px 開始觸發
+  const AUTO_SCROLL_MIN_SPEED = 4;    // 剛超過邊界時的速度
+  const AUTO_SCROLL_MAX_SPEED = 20;   // 最靠近邊界時的速度（可依手感調整）
 
   const stopAutoScroll = () => {
     if (autoScrollRafRef.current) {
@@ -198,12 +199,27 @@ export default function App() {
       return;
     }
     const windowHeight = window.innerHeight;
+    let delta = 0;
+
     if (clientY < AUTO_SCROLL_EDGE) {
-      window.scrollBy(0, -AUTO_SCROLL_SPEED);
+      const ratio = (AUTO_SCROLL_EDGE - clientY) / AUTO_SCROLL_EDGE;
+      delta = -(AUTO_SCROLL_MIN_SPEED + (AUTO_SCROLL_MAX_SPEED - AUTO_SCROLL_MIN_SPEED) * ratio);
     } else if (clientY > windowHeight - AUTO_SCROLL_EDGE) {
-      window.scrollBy(0, AUTO_SCROLL_SPEED);
+      const ratio = (clientY - (windowHeight - AUTO_SCROLL_EDGE)) / AUTO_SCROLL_EDGE;
+      delta = AUTO_SCROLL_MIN_SPEED + (AUTO_SCROLL_MAX_SPEED - AUTO_SCROLL_MIN_SPEED) * ratio;
+    }
+
+    if (delta !== 0) {
+      window.scrollBy(0, delta);
     }
     autoScrollRafRef.current = requestAnimationFrame(autoScrollStep);
+  };
+
+  const updateAutoScroll = (clientY) => {
+    autoScrollClientYRef.current = clientY;
+    if (!autoScrollRafRef.current) {
+      autoScrollRafRef.current = requestAnimationFrame(autoScrollStep);
+    }
   };
 
   // 拖曳中持續更新目前手指/滑鼠的 Y 座標，讓 rAF 迴圈讀取
@@ -231,6 +247,12 @@ export default function App() {
     };
     document.addEventListener('touchmove', preventScrollWhileDragging, { passive: false });
     return () => document.removeEventListener('touchmove', preventScrollWhileDragging);
+  }, []);
+
+  // 關閉頁面下拉回彈手勢，避免手機拖曳排序時觸發下拉刷新/彈跳
+  useEffect(() => {
+    document.documentElement.style.overscrollBehaviorY = 'none';
+    document.body.style.overscrollBehaviorY = 'none';
   }, []);
 
   const fetchCapsules = async () => {
@@ -472,6 +494,7 @@ export default function App() {
   const handleDragStart = (e, index) => {
     isDraggingRef.current = true;
     draggedIndexRef.current = index;
+    document.documentElement.style.touchAction = 'none';
     document.body.style.touchAction = 'none';
     e.dataTransfer.effectAllowed = 'move';
     setTimeout(() => {
@@ -483,6 +506,7 @@ export default function App() {
     isDraggingRef.current = false;
     e.target.classList.remove('opacity-40');
     setDragOverIndex(null);
+    document.documentElement.style.touchAction = '';
     document.body.style.touchAction = '';
     stopAutoScroll();
   };
@@ -521,6 +545,7 @@ export default function App() {
   const handleTouchStart = (e, index) => {
     isDraggingRef.current = true;
     draggedIndexRef.current = index;
+    document.documentElement.style.touchAction = 'none';
     document.body.style.touchAction = 'none';
   };
 
@@ -550,6 +575,7 @@ export default function App() {
 
   const handleTouchEnd = async (e, type) => {
     isDraggingRef.current = false;
+    document.documentElement.style.touchAction = '';
     document.body.style.touchAction = '';
     stopAutoScroll();
   
@@ -942,10 +968,14 @@ export default function App() {
                             setEditEmojiCustom(isPreset ? '' : item.emoji);
                           }
                         }}
-                        className={`flex items-center justify-between p-3.5 bg-white rounded-2xl border shadow-sm transition-all duration-200 cursor-pointer group relative transform text-[#3A4F41] touch-manipulation ${
-                          isTopBorder ? 'border-t-[3px] border-[#C0624A] bg-[#C0624A]/10 scale-[1.01]' : isBottomBorder ? 'border-b-[3px] border-[#C0624A] bg-[#C0624A]/10 scale-[1.01]' : 'border-[#7A8A6A]/20 hover:border-[#C0624A]'
+                        className={`flex items-center justify-between p-3.5 bg-white rounded-2xl border border-[#7A8A6A]/20 shadow-sm transition-all duration-200 cursor-pointer group relative transform text-[#3A4F41] touch-manipulation hover:border-[#C0624A] ${
+                          (isTopBorder || isBottomBorder) ? 'scale-[1.01] bg-[#C0624A]/5' : ''
                         }`}
                       >
+                        {/* 插入位置指示條：絕對定位，不影響版面高度，避免拖曳卡頓 */}
+                        <div className={`pointer-events-none absolute left-2 right-2 -top-[3px] h-[4px] rounded-full bg-[#C0624A] shadow-[0_0_6px_rgba(192,98,74,0.6)] transition-opacity duration-150 ${isTopBorder ? 'opacity-100 animate-pulse' : 'opacity-0'}`} />
+                        <div className={`pointer-events-none absolute left-2 right-2 -bottom-[3px] h-[4px] rounded-full bg-[#C0624A] shadow-[0_0_6px_rgba(192,98,74,0.6)] transition-opacity duration-150 ${isBottomBorder ? 'opacity-100 animate-pulse' : 'opacity-0'}`} />
+                        
                         <div className="flex items-center space-x-3 overflow-hidden mr-2">
                           <span 
                             className={`cursor-grab active:cursor-grabbing px-2 py-1 text-sm select-none font-bold ${itemSortMode !== 'manual' ? 'opacity-30 cursor-not-allowed' : 'text-[#7A8A6A] hover:text-[#3A4F41]'}`} 
