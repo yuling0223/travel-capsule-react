@@ -177,6 +177,7 @@ export default function App() {
   // 拖曳排序與自動滾動參照
   const draggedIndexRef = useRef(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
+  const [draggingIndex, setDraggingIndex] = useState(null); // 目前正在被拖曳的卡片 index，用來套用漂浮特效
   const autoScrollRafRef = useRef(null);
   const autoScrollClientYRef = useRef(null);
 
@@ -487,6 +488,7 @@ export default function App() {
   const handleDragStart = (e, index) => {
     isDraggingRef.current = true;
     draggedIndexRef.current = index;
+    setDraggingIndex(index);
     document.documentElement.style.touchAction = 'none';
     document.body.style.touchAction = 'none';
     e.dataTransfer.effectAllowed = 'move';
@@ -499,6 +501,7 @@ export default function App() {
     isDraggingRef.current = false;
     e.target.classList.remove('opacity-40');
     setDragOverIndex(null);
+    setDraggingIndex(null);
     document.documentElement.style.touchAction = '';
     document.body.style.touchAction = '';
     stopAutoScroll();
@@ -538,6 +541,7 @@ export default function App() {
   const handleTouchStart = (e, index) => {
     isDraggingRef.current = true;
     draggedIndexRef.current = index;
+    setDraggingIndex(index);
     document.documentElement.style.touchAction = 'none';
     document.body.style.touchAction = 'none';
   };
@@ -570,6 +574,7 @@ export default function App() {
     isDraggingRef.current = false;
     document.documentElement.style.touchAction = '';
     document.body.style.touchAction = '';
+    setDraggingIndex(null);
     stopAutoScroll();
   
     const draggedIdx = draggedIndexRef.current;
@@ -676,7 +681,7 @@ export default function App() {
                   return (
                     <div 
                       key={cap.id} 
-                      className="relative overflow-hidden rounded-2xl shadow-sm hover:shadow-md transition-shadow"
+                      className={`relative rounded-2xl shadow-sm hover:shadow-md transition-shadow ${index === draggingIndex ? 'overflow-visible' : 'overflow-hidden'}`}
                       onClick={(e) => e.stopPropagation()}
                     >
                       {/* 底層隱藏的刪除按鈕 (手機滑出顯示) */}
@@ -737,8 +742,10 @@ export default function App() {
                           transform: isSwiped ? 'translateX(-112px)' : 'translateX(0px)',
                           transition: 'transform 0.25s ease-in-out'
                         }}
-                        className={`${cap.bg_url ? '' : 'bg-white'} p-5 border border-[#7A8A6A]/20 relative z-10 cursor-pointer flex justify-between items-center touch-manipulation ${
-                          (isTopBorder || isBottomBorder) ? 'scale-[1.01]' : ''
+                        className={`${cap.bg_url ? '' : 'bg-white'} p-5 border relative cursor-pointer flex justify-between items-center touch-manipulation transition-all duration-150 ${
+                          index === draggingIndex 
+                            ? 'z-30 scale-[1.04] shadow-2xl border-[#C0624A] border-2 -rotate-1' 
+                            : `z-10 border-[#7A8A6A]/20 ${(isTopBorder || isBottomBorder) ? 'scale-[1.01]' : ''}`
                         }`}
                       >
                           {/* 插入位置指示條：絕對定位，不影響版面高度，避免拖曳卡頓 */}
@@ -965,8 +972,10 @@ export default function App() {
                             setEditEmojiCustom(isPreset ? '' : item.emoji);
                           }
                         }}
-                        className={`flex items-center justify-between p-3.5 bg-white rounded-2xl border border-[#7A8A6A]/20 shadow-sm transition-all duration-200 cursor-pointer group relative transform text-[#3A4F41] touch-manipulation hover:border-[#C0624A] ${
-                          (isTopBorder || isBottomBorder) ? 'scale-[1.01] bg-[#C0624A]/5' : ''
+                        className={`flex items-center justify-between p-3.5 bg-white rounded-2xl border transition-all duration-150 cursor-pointer group relative text-[#3A4F41] touch-manipulation ${
+                          index === draggingIndex
+                            ? 'z-30 scale-[1.04] shadow-2xl border-[#C0624A] border-2 -rotate-1'
+                            : `border-[#7A8A6A]/20 hover:border-[#C0624A] shadow-sm ${(isTopBorder || isBottomBorder) ? 'scale-[1.01] bg-[#C0624A]/5' : ''}`
                         }`}
                       >
                         {/* 插入位置指示條：絕對定位，不影響版面高度，避免拖曳卡頓 */}
