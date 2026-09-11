@@ -132,6 +132,7 @@ export default function App() {
 
   // 長按計時器 Ref (用於畫面 B 長按複製)
   const longPressTimerRef = useRef(null);
+  const isDraggingRef = useRef(false);
 
   // 複製資源 Modal 狀態
   const [copyModalOpen, setCopyModalOpen] = useState(false);
@@ -468,10 +469,12 @@ export default function App() {
 
   // 行動裝置觸控排序 (Touch Events)
   const handleTouchStart = (e, index) => {
+    isDraggingRef.current = true;
     draggedIndexRef.current = index;
   };
 
   const handleTouchMove = (e, type, listLength) => {
+    if (!isDraggingRef.current) return;
     const touch = e.touches[0];
     const clientY = touch.clientY;
     
@@ -490,20 +493,21 @@ export default function App() {
       }
     }
 
-    const threshold = 60;
+    const threshold = 80;
     const windowHeight = window.innerHeight;
     if (autoScrollIntervalRef.current) {
       clearInterval(autoScrollIntervalRef.current);
       autoScrollIntervalRef.current = null;
     }
     if (clientY < threshold) {
-      autoScrollIntervalRef.current = setInterval(() => { window.scrollBy({ top: -15, behavior: 'smooth' }); }, 50);
+      autoScrollIntervalRef.current = setInterval(() => { window.scrollBy({ top: -8, behavior: 'auto' }); }, 30);
     } else if (clientY > windowHeight - threshold) {
-      autoScrollIntervalRef.current = setInterval(() => { window.scrollBy({ top: 15, behavior: 'smooth' }); }, 50);
+      autoScrollIntervalRef.current = setInterval(() => { window.scrollBy({ top: 8, behavior: 'auto' }); }, 30);
     }
   };
 
   const handleTouchEnd = async (e, type) => {
+    isDraggingRef.current = false;
     if (autoScrollIntervalRef.current) {
       clearInterval(autoScrollIntervalRef.current);
       autoScrollIntervalRef.current = null;
@@ -643,18 +647,21 @@ export default function App() {
                         onDrop={(e) => handleDrop(e, index, 'capsules')}
                         onTouchStart={(e) => {
                           touchStartXRef.current = e.touches[0].clientX;
-                          handleTouchStart(e, index);
                         }}
                         onTouchMove={(e) => {
-                          handleTouchMove(e, 'capsules', capsules.length);
+                          if (isDraggingRef.current) {
+                            handleTouchMove(e, 'capsules', capsules.length);
+                          }
                         }}
                         onTouchEnd={(e) => {
-                          const touchEndX = e.changedTouches[0].clientX;
-                          const diffX = touchStartXRef.current - touchEndX;
-                          if (diffX > 50) {
-                            setSwipedCapsuleId(cap.id);
-                          } else if (diffX < -30 && isSwiped) {
-                            setSwipedCapsuleId(null);
+                          if (!isDraggingRef.current) {
+                            const touchEndX = e.changedTouches[0].clientX;
+                            const diffX = touchStartXRef.current - touchEndX;
+                            if (diffX > 50) {
+                              setSwipedCapsuleId(cap.id);
+                            } else if (diffX < -30 && isSwiped) {
+                              setSwipedCapsuleId(null);
+                            }
                           }
                           handleTouchEnd(e, 'capsules');
                         }}
@@ -680,7 +687,10 @@ export default function App() {
                             className={`cursor-grab active:cursor-grabbing px-2 py-1 text-lg select-none font-bold transition ${cap.bg_url ? 'text-white/70 hover:text-white' : 'text-[#7A8A6A] hover:text-[#3A4F41]'}`} 
                             title="按住上下拖拉排序"
                             onMouseDown={(e) => e.stopPropagation()}
-                            onTouchStart={(e) => e.stopPropagation()}
+                            onTouchStart={(e) => {
+                              e.stopPropagation();
+                              handleTouchStart(e, index);
+                            }}
                           >
                             ☰
                           </span>
@@ -780,7 +790,7 @@ export default function App() {
               {target.items && target.items.length > 1 && (
                 <div className="flex justify-between items-center mb-3 px-1">
                   <span className="text-xs text-[#7A8A6A]">
-                    {itemSortMode === 'manual' ? '👉 拖曳左側 ☰ 可自由調整順序 (長按項目可快速複製)' : '⚡ 已依照 Emoji 分類自動排序'}
+                    {itemSortMode === 'manual' ? '👉 長按項目可快速複製，拖曳左側 ☰ 排序' : '⚡ 已依照 Emoji 分類自動排序'}
                   </span>
                   <div className="inline-flex bg-white/90 backdrop-blur rounded-xl p-1 border border-[#7A8A6A]/30 text-xs shadow-sm">
                     <button 
@@ -830,33 +840,45 @@ export default function App() {
                         onDragOver={(e) => itemSortMode === 'manual' && handleDragOver(e, index, e.currentTarget)}
                         onDrop={(e) => itemSortMode === 'manual' && handleDrop(e, index, 'items')}
                         onTouchStart={(e) => {
-                          itemSortMode === 'manual' && handleTouchStart(e, index);
-                          longPressTimerRef.current = setTimeout(() => {
-                            setItemToCopy(item);
-                            setTargetCopyCapsuleId(target.id);
-                            setCopyModalOpen(true);
-                          }, 600);
+                          // 如果不是點擊拖曳鈕，才啟動長按複製
+                          if (!isDraggingRef.current) {
+                            longPressTimerRef.current = setTimeout(() => {
+                              if (!isDraggingRef.current) {
+                                setItemToCopy(item);
+                                setTargetCopyCapsuleId(target.id);
+                                setCopyModalOpen(true);
+                              }
+                            }, 600);
+                          }
                         }}
                         onTouchMove={(e) => {
-                          itemSortMode === 'manual' && handleTouchMove(e, 'items', target.items.length);
+                          if (isDraggingRef.current) {
+                            itemSortMode === 'manual' && handleTouchMove(e, 'items', target.items.length);
+                          }
                           if (longPressTimerRef.current) {
                             clearTimeout(longPressTimerRef.current);
                             longPressTimerRef.current = null;
                           }
                         }}
                         onTouchEnd={(e) => {
-                          itemSortMode === 'manual' && handleTouchEnd(e, 'items');
+                          if (isDraggingRef.current) {
+                            itemSortMode === 'manual' && handleTouchEnd(e, 'items');
+                          }
                           if (longPressTimerRef.current) {
                             clearTimeout(longPressTimerRef.current);
                             longPressTimerRef.current = null;
                           }
                         }}
                         onMouseDown={() => {
-                          longPressTimerRef.current = setTimeout(() => {
-                            setItemToCopy(item);
-                            setTargetCopyCapsuleId(target.id);
-                            setCopyModalOpen(true);
-                          }, 600);
+                          if (!isDraggingRef.current) {
+                            longPressTimerRef.current = setTimeout(() => {
+                              if (!isDraggingRef.current) {
+                                setItemToCopy(item);
+                                setTargetCopyCapsuleId(target.id);
+                                setCopyModalOpen(true);
+                              }
+                            }, 600);
+                          }
                         }}
                         onMouseUp={() => {
                           if (longPressTimerRef.current) {
@@ -871,12 +893,14 @@ export default function App() {
                           }
                         }}
                         onClick={() => { 
-                          setActiveItemId(item.id); 
-                          setCurrentView('itemDetail'); 
-                          setIsEditingItem(false); 
-                          const isPreset = PRESET_EMOJIS.some(e => e.value === item.emoji);
-                          setEditEmojiSelect(isPreset ? item.emoji : 'custom');
-                          setEditEmojiCustom(isPreset ? '' : item.emoji);
+                          if (!isDraggingRef.current) {
+                            setActiveItemId(item.id); 
+                            setCurrentView('itemDetail'); 
+                            setIsEditingItem(false); 
+                            const isPreset = PRESET_EMOJIS.some(e => e.value === item.emoji);
+                            setEditEmojiSelect(isPreset ? item.emoji : 'custom');
+                            setEditEmojiCustom(isPreset ? '' : item.emoji);
+                          }
                         }}
                         className={`flex items-center justify-between p-3.5 bg-white rounded-2xl border shadow-sm transition-all duration-200 cursor-pointer group relative transform text-[#3A4F41] touch-manipulation ${
                           isTopBorder ? 'border-t-4 border-[#C0624A] scale-[1.01]' : isBottomBorder ? 'border-b-4 border-[#C0624A] scale-[1.01]' : 'border-[#7A8A6A]/20 hover:border-[#C0624A]'
@@ -887,7 +911,10 @@ export default function App() {
                             className={`cursor-grab active:cursor-grabbing px-2 py-1 text-sm select-none font-bold ${itemSortMode !== 'manual' ? 'opacity-30 cursor-not-allowed' : 'text-[#7A8A6A] hover:text-[#3A4F41]'}`} 
                             title={itemSortMode === 'manual' ? "按住上下拖拉排序" : "切換至手動排序以啟用拖曳"}
                             onMouseDown={(e) => e.stopPropagation()}
-                            onTouchStart={(e) => e.stopPropagation()}
+                            onTouchStart={(e) => {
+                              e.stopPropagation();
+                              handleTouchStart(e, index);
+                            }}
                           >
                             ☰
                           </span>
