@@ -215,13 +215,6 @@ export default function App() {
     autoScrollRafRef.current = requestAnimationFrame(autoScrollStep);
   };
 
-  const updateAutoScroll = (clientY) => {
-    autoScrollClientYRef.current = clientY;
-    if (!autoScrollRafRef.current) {
-      autoScrollRafRef.current = requestAnimationFrame(autoScrollStep);
-    }
-  };
-
   // 拖曳中持續更新目前手指/滑鼠的 Y 座標，讓 rAF 迴圈讀取
   const updateAutoScroll = (clientY) => {
     autoScrollClientYRef.current = clientY;
@@ -744,10 +737,14 @@ export default function App() {
                           transform: isSwiped ? 'translateX(-112px)' : 'translateX(0px)',
                           transition: 'transform 0.25s ease-in-out'
                         }}
-                        className={`${cap.bg_url ? '' : 'bg-white'} p-5 border relative z-10 cursor-pointer flex justify-between items-center touch-manipulation ${
-                          isTopBorder ? 'border-t-[3px] border-[#C0624A] bg-[#C0624A]/10 scale-[1.01]' : isBottomBorder ? 'border-b-[3px] border-[#C0624A] bg-[#C0624A]/10 scale-[1.01]' : 'border-[#7A8A6A]/20'
+                        className={`${cap.bg_url ? '' : 'bg-white'} p-5 border border-[#7A8A6A]/20 relative z-10 cursor-pointer flex justify-between items-center touch-manipulation ${
+                          (isTopBorder || isBottomBorder) ? 'scale-[1.01]' : ''
                         }`}
                       >
+                          {/* 插入位置指示條：絕對定位，不影響版面高度，避免拖曳卡頓 */}
+                        <div className={`pointer-events-none absolute left-2 right-2 -top-[3px] h-[4px] rounded-full bg-[#C0624A] shadow-[0_0_6px_rgba(192,98,74,0.6)] transition-opacity duration-150 z-20 ${isTopBorder ? 'opacity-100 animate-pulse' : 'opacity-0'}`} />
+                        <div className={`pointer-events-none absolute left-2 right-2 -bottom-[3px] h-[4px] rounded-full bg-[#C0624A] shadow-[0_0_6px_rgba(192,98,74,0.6)] transition-opacity duration-150 z-20 ${isBottomBorder ? 'opacity-100 animate-pulse' : 'opacity-0'}`} />
+
                         <div className="flex items-center space-x-3.5 overflow-hidden z-10">
                           <span 
                             className={`cursor-grab active:cursor-grabbing px-2 py-1 text-lg select-none font-bold transition ${cap.bg_url ? 'text-white/70 hover:text-white' : 'text-[#7A8A6A] hover:text-[#3A4F41]'}`} 
