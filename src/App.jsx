@@ -179,12 +179,47 @@ export default function App() {
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const autoScrollIntervalRef = useRef(null);
 
+  const AUTO_SCROLL_EDGE = 80;   // 距離畫面邊緣多少 px 開始觸發
+  const AUTO_SCROLL_SPEED = 6;   // 每次捲動的像素數（放慢速度）
+
+  const stopAutoScroll = () => {
+    if (autoScrollIntervalRef.current) {
+      clearInterval(autoScrollIntervalRef.current);
+      autoScrollIntervalRef.current = null;
+    }
+  };
+
+  const updateAutoScroll = (clientY) => {
+    stopAutoScroll();
+    const windowHeight = window.innerHeight;
+    if (clientY < AUTO_SCROLL_EDGE) {
+      autoScrollIntervalRef.current = setInterval(() => {
+        window.scrollBy({ top: -AUTO_SCROLL_SPEED, behavior: 'auto' });
+      }, 30);
+    } else if (clientY > windowHeight - AUTO_SCROLL_EDGE) {
+      autoScrollIntervalRef.current = setInterval(() => {
+        window.scrollBy({ top: AUTO_SCROLL_SPEED, behavior: 'auto' });
+      }, 30);
+    }
+  };
+
   useEffect(() => {
     if (!supabase) {
       setConfigModalOpen(true);
     } else {
       fetchCapsules();
     }
+  }, []);
+
+    // 拖曳排序時，用原生非被動監聽阻止手機瀏覽器的原生滑動手勢
+  useEffect(() => {
+    const preventScrollWhileDragging = (e) => {
+      if (isDraggingRef.current) {
+        e.preventDefault();
+      }
+    };
+    document.addEventListener('touchmove', preventScrollWhileDragging, { passive: false });
+    return () => document.removeEventListener('touchmove', preventScrollWhileDragging);
   }, []);
 
   const fetchCapsules = async () => {
@@ -425,7 +460,6 @@ export default function App() {
   // 桌面端滑鼠拖曳排序 (HTML5 Drag & Drop)
   const handleDragStart = (e, index) => {
     isDraggingRef.current = true;
-    document.body.style.overflow = 'hidden';
     draggedIndexRef.current = index;
     e.dataTransfer.effectAllowed = 'move';
     setTimeout(() => {
@@ -435,25 +469,24 @@ export default function App() {
 
   const handleDragEnd = (e) => {
     isDraggingRef.current = false;
-    document.body.style.overflow = 'auto';
     e.target.classList.remove('opacity-40');
     setDragOverIndex(null);
-    if (autoScrollIntervalRef.current) {
-      clearInterval(autoScrollIntervalRef.current);
-      autoScrollIntervalRef.current = null;
-    }
+    stopAutoScroll();
   };
 
   const handleDragOver = (e, index, itemEl) => {
     e.preventDefault();
     const rect = itemEl.getBoundingClientRect();
     const midpoint = rect.top + rect.height / 2;
-    
+
     if (e.clientY < midpoint) {
       setDragOverIndex(`top-${index}`);
     } else {
       setDragOverIndex(`bottom-${index}`);
     }
+
+    // 邊緣自動慢速滾動（滑鼠拖曳）
+    updateAutoScroll(e.clientY);
   };
 
   const handleDrop = async (e, targetIndex, type) => {
@@ -474,7 +507,6 @@ export default function App() {
   // 行動裝置觸控排序 (Touch Events)
   const handleTouchStart = (e, index) => {
     isDraggingRef.current = true;
-    document.body.style.overflow = 'hidden';
     draggedIndexRef.current = index;
   };
 
@@ -482,15 +514,15 @@ export default function App() {
     if (!isDraggingRef.current) return;
     const touch = e.touches[0];
     const clientY = touch.clientY;
-    
+
     const elements = document.elementsFromPoint(touch.clientX, clientY);
     const cardEl = elements.find(el => el.getAttribute('data-index') !== null);
-    
+
     if (cardEl) {
       const targetIndex = parseInt(cardEl.getAttribute('data-index'), 10);
       const rect = cardEl.getBoundingClientRect();
       const midpoint = rect.top + rect.height / 2;
-      
+
       if (clientY < midpoint) {
         setDragOverIndex(`top-${targetIndex}`);
       } else {
@@ -498,26 +530,13 @@ export default function App() {
       }
     }
 
-    const threshold = 80;
-    const windowHeight = window.innerHeight;
-    if (autoScrollIntervalRef.current) {
-      clearInterval(autoScrollIntervalRef.current);
-      autoScrollIntervalRef.current = null;
-    }
-    if (clientY < threshold) {
-      autoScrollIntervalRef.current = setInterval(() => { window.scrollBy({ top: -8, behavior: 'auto' }); }, 30);
-    } else if (clientY > windowHeight - threshold) {
-      autoScrollIntervalRef.current = setInterval(() => { window.scrollBy({ top: 8, behavior: 'auto' }); }, 30);
-    }
+    // 邊緣自動慢速滾動（觸控拖曳）
+    updateAutoScroll(clientY);
   };
 
   const handleTouchEnd = async (e, type) => {
     isDraggingRef.current = false;
-    document.body.style.overflow = 'auto';
-    if (autoScrollIntervalRef.current) {
-      clearInterval(autoScrollIntervalRef.current);
-      autoScrollIntervalRef.current = null;
-    }
+    stopAutoScroll();
 
     const draggedIdx = draggedIndexRef.current;
     if (draggedIdx === null) return;
@@ -691,6 +710,7 @@ export default function App() {
                         <div className="flex items-center space-x-3.5 overflow-hidden z-10">
                           <span 
                             className={`cursor-grab active:cursor-grabbing px-2 py-1 text-lg select-none font-bold transition ${cap.bg_url ? 'text-white/70 hover:text-white' : 'text-[#7A8A6A] hover:text-[#3A4F41]'}`} 
+                            style={{ touchAction: 'none' }}
                             title="按住上下拖拉排序"
                             onMouseDown={(e) => e.stopPropagation()}
                             onTouchStart={(e) => {
@@ -914,6 +934,7 @@ export default function App() {
                         <div className="flex items-center space-x-3 overflow-hidden mr-2">
                           <span 
                             className={`cursor-grab active:cursor-grabbing px-2 py-1 text-sm select-none font-bold ${itemSortMode !== 'manual' ? 'opacity-30 cursor-not-allowed' : 'text-[#7A8A6A] hover:text-[#3A4F41]'}`} 
+                            style={{ touchAction: 'none' }}
                             title={itemSortMode === 'manual' ? "按住上下拖拉排序" : "切換至手動排序以啟用拖曳"}
                             onMouseDown={(e) => e.stopPropagation()}
                             onTouchStart={(e) => {
