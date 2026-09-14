@@ -35,84 +35,145 @@ const COUNTRY_APPS = {
   jp: {
     name: "🇯🇵 日本",
     apps: [
-      { name: "Google Maps (地圖)", scheme: "comgooglemaps://" },
-      { name: "Yahoo!乘換案內 (地鐵/轉乘)", scheme: "yahootransit://" },
-      { name: "Suica / Apple Wallet (交通卡)", scheme: "suica://" },
-      { name: "Tabelog (美食)", scheme: "tabelog://" },
-      { name: "乘換NAVITIME (轉乘)", scheme: "navitime://" },
-      { name: "Smart EX (新幹線預約)", scheme: "smartex://" }
+      { name: "Google Maps (地圖)", scheme: "comgooglemaps://", searchName: "Google Maps" },
+      { name: "Yahoo!乘換案內 (地鐵/轉乘)", scheme: "yahootransit://", searchName: "Yahoo乗換案内" },
+      { name: "Suica / Apple Wallet (交通卡)", scheme: "suica://", searchName: "Suica" },
+      { name: "Tabelog (美食)", scheme: "tabelog://", searchName: "食べログ Tabelog" },
+      { name: "乘換NAVITIME (轉乘)", scheme: "navitime://", searchName: "NAVITIME" },
+      { name: "Smart EX (新幹線預約)", scheme: "smartex://", searchName: "Smart EX" }
     ]
   },
   kr: {
     name: "🇰🇷 南韓",
     apps: [
-      { name: "Naver Map (地圖/導航)", scheme: "navermap://" },
-      { name: "Kakao Map (地圖)", scheme: "kakaomap://" },
-      { name: "Kakao T (計程車/叫車)", scheme: "kakaot://" },
-      { name: "Papago (翻譯)", scheme: "papago://" },
-      { name: "Subway Korea (地鐵)", scheme: "subwaykorea://" },
-      { name: "Coupang Eats (外送)", scheme: "cpangeats://" }
+      { name: "Naver Map (地圖/導航)", scheme: "navermap://", searchName: "Naver Map" },
+      { name: "Kakao Map (地圖)", scheme: "kakaomap://", searchName: "Kakao Map" },
+      { name: "Kakao T (計程車/叫車)", scheme: "kakaot://", searchName: "Kakao T" },
+      { name: "Papago (翻譯)", scheme: "papago://", searchName: "Papago" },
+      { name: "Subway Korea (地鐵)", scheme: "subwaykorea://", searchName: "Subway Korea" },
+      { name: "Coupang Eats (外送)", scheme: "cpangeats://", searchName: "Coupang Eats" }
     ]
   },
   th: {
     name: "🇹🇭 泰國",
     apps: [
-      { name: "Grab (叫車/外送)", scheme: "grab://" },
-      { name: "Bolt (叫車)", scheme: "bolt://" },
-      { name: "Google Maps (地圖)", scheme: "comgooglemaps://" },
-      { name: "LINE MAN (美食外送)", scheme: "lineman://" },
-      { name: "ViaBus (公車追蹤)", scheme: "viabus://" }
+      { name: "Grab (叫車/外送)", scheme: "grab://", searchName: "Grab" },
+      { name: "Bolt (叫車)", scheme: "bolt://", searchName: "Bolt" },
+      { name: "Google Maps (地圖)", scheme: "comgooglemaps://", searchName: "Google Maps" },
+      { name: "LINE MAN (美食外送)", scheme: "lineman://", searchName: "LINE MAN" },
+      { name: "ViaBus (公車追蹤)", scheme: "viabus://", searchName: "ViaBus" }
     ]
   },
   sg: {
     name: "🇸🇬 新加坡",
     apps: [
-      { name: "Grab (叫車/外送)", scheme: "grab://" },
-      { name: "Citymapper (大眾運輸)", scheme: "citymapper://" },
-      { name: "Google Maps (地圖)", scheme: "comgooglemaps://" },
-      { name: "ComfortDelGro (德士叫車)", scheme: "cdgtaxi://" }
+      { name: "Grab (叫車/外送)", scheme: "grab://", searchName: "Grab" },
+      { name: "Citymapper (大眾運輸)", scheme: "citymapper://", searchName: "Citymapper" },
+      { name: "Google Maps (地圖)", scheme: "comgooglemaps://", searchName: "Google Maps" },
+      { name: "ComfortDelGro (德士叫車)", scheme: "cdgtaxi://", searchName: "ComfortDelGro" }
     ]
   },
   us: {
     name: "🇺🇸 美國",
     apps: [
-      { name: "Uber (叫車)", scheme: "uber://" },
-      { name: "Lyft (叫車)", scheme: "lyft://" },
-      { name: "Google Maps (地圖)", scheme: "comgooglemaps://" },
-      { name: "Yelp (美食/店家評價)", scheme: "yelp://" },
-      { name: "OpenTable (餐廳訂位)", scheme: "opentable://" }
+      { name: "Uber (叫車)", scheme: "uber://", searchName: "Uber" },
+      { name: "Lyft (叫車)", scheme: "lyft://", searchName: "Lyft" },
+      { name: "Google Maps (地圖)", scheme: "comgooglemaps://", searchName: "Google Maps" },
+      { name: "Yelp (美食/店家評價)", scheme: "yelp://", searchName: "Yelp" },
+      { name: "OpenTable (餐廳訂位)", scheme: "opentable://", searchName: "OpenTable" }
     ]
   },
   vn: {
     name: "🇻🇳 越南",
     apps: [
-      { name: "Grab (叫車/外送)", scheme: "grab://" },
-      { name: "Be (叫車/外送)", scheme: "be://" },
-      { name: "Google Maps (地圖)", scheme: "comgooglemaps://" },
-      { name: "Gojek (叫車/美食)", scheme: "gojek://" }
+      { name: "Grab (叫車/外送)", scheme: "grab://", searchName: "Grab" },
+      { name: "Be (叫車/外送)", scheme: "be://", searchName: "Be" },
+      { name: "Google Maps (地圖)", scheme: "comgooglemaps://", searchName: "Google Maps" },
+      { name: "Gojek (叫車/美食)", scheme: "gojek://", searchName: "Gojek" }
     ]
   },
   eu: {
     name: "🇪🇺 歐洲",
     apps: [
-      { name: "Citymapper (歐洲大眾運輸)", scheme: "citymapper://" },
-      { name: "Omio (跨國火車/巴士)", scheme: "omio://" },
-      { name: "Uber (叫車)", scheme: "uber://" },
-      { name: "Google Maps (地圖)", scheme: "comgooglemaps://" },
-      { name: "TheFork (歐洲餐廳訂位)", scheme: "thefork://" }
+      { name: "Citymapper (歐洲大眾運輸)", scheme: "citymapper://", searchName: "Citymapper" },
+      { name: "Omio (跨國火車/巴士)", scheme: "omio://", searchName: "Omio" },
+      { name: "Uber (叫車)", scheme: "uber://", searchName: "Uber" },
+      { name: "Google Maps (地圖)", scheme: "comgooglemaps://", searchName: "Google Maps" },
+      { name: "TheFork (歐洲餐廳訂位)", scheme: "thefork://", searchName: "TheFork" }
     ]
   },
   global: {
     name: "🌍 全球通用",
     apps: [
-      { name: "Klook (旅遊票券/行程)", scheme: "klook://" },
-      { name: "KKday (旅遊體驗)", scheme: "kkday://" },
-      { name: "Google Maps (地圖)", scheme: "comgooglemaps://" },
-      { name: "Uber (叫車)", scheme: "uber://" },
-      { name: "Google Translate (翻譯)", scheme: "googletranslate://" },
-      { name: "Airbnb (住宿)", scheme: "airbnb://" }
+      { name: "Klook (旅遊票券/行程)", scheme: "klook://", searchName: "Klook" },
+      { name: "KKday (旅遊體驗)", scheme: "kkday://", searchName: "KKday" },
+      { name: "Google Maps (地圖)", scheme: "comgooglemaps://", searchName: "Google Maps" },
+      { name: "Uber (叫車)", scheme: "uber://", searchName: "Uber" },
+      { name: "Google Translate (翻譯)", scheme: "googletranslate://", searchName: "Google Translate" },
+      { name: "Airbnb (住宿)", scheme: "airbnb://", searchName: "Airbnb" }
     ]
   }
+};
+
+// ============ App 喚醒 / 商店跳轉 / 裝置判斷工具 ============
+const isMobileDevice = () => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || '');
+const isIOSDevice = () => /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+
+// 依 App 名稱組出商店搜尋連結 (無需 App ID，泛用性最高)
+const buildStoreUrls = (appName) => ({
+  ios: `https://apps.apple.com/search?term=${encodeURIComponent(appName || '')}`,
+  android: `https://play.google.com/store/search?q=${encodeURIComponent(appName || '')}&c=apps`
+});
+
+// 嘗試喚醒 App，若裝置未安裝該 App（在停留時間內頁面未被切走），則導向對應商店頁面
+// 若非手機瀏覽，直接提示僅能於手機開啟
+const openAppOrStore = ({ scheme, iosStoreUrl, androidStoreUrl, appLabel }) => {
+  if (!isMobileDevice()) {
+    alert(`「${appLabel || '此項目'}」為手機 App 捷徑，僅能在手機瀏覽器中開啟喚醒，請改用手機掃描 QR Code 或直接於手機上開啟本頁面。`);
+    return;
+  }
+
+  const fallbackUrl = isIOSDevice() ? iosStoreUrl : androidStoreUrl;
+  let didLeave = false;
+  const handleVisibility = () => { if (document.hidden) didLeave = true; };
+  document.addEventListener('visibilitychange', handleVisibility);
+
+  window.location.href = scheme;
+
+  setTimeout(() => {
+    document.removeEventListener('visibilitychange', handleVisibility);
+    if (!didLeave && fallbackUrl) {
+      window.location.href = fallbackUrl;
+    }
+  }, 1500);
+};
+
+// ============ 分享功能 ============
+const shareContent = async (title, text, url) => {
+  if (navigator.share) {
+    try {
+      await navigator.share(url ? { title, text, url } : { title, text });
+    } catch (err) {
+      if (err && err.name !== 'AbortError') console.error('分享失敗:', err);
+    }
+    return;
+  }
+  if (navigator.clipboard) {
+    try {
+      await navigator.clipboard.writeText(url ? `${text}\n${url}` : text);
+      alert('已複製分享內容到剪貼簿，貼上即可分享給朋友！');
+    } catch (err) {
+      alert('分享功能無法使用，請手動複製內容分享。');
+    }
+    return;
+  }
+  alert('此瀏覽器不支援分享功能。');
+};
+
+const buildCapsuleShareText = (cap) => {
+  const items = cap.items || [];
+  const lines = items.map(i => `${i.emoji || '🌐'} ${i.name}${i.type === 'note' ? `：${i.content}` : ''}`);
+  return `📦 ${cap.title}\n包含 ${items.length} 項資源與捷徑\n\n${lines.join('\n')}\n\n— 來自 travel capsule`;
 };
 
 export default function App() {
@@ -171,6 +232,13 @@ export default function App() {
   const [editEmojiSelect, setEditEmojiSelect] = useState('✈️');
   const [editEmojiCustom, setEditEmojiCustom] = useState('');
 
+  // 新增資源：App 選擇方式 ('country' 依國家選擇 | 'search' 自行搜尋)
+  const [appSourceMode, setAppSourceMode] = useState('country');
+  const [appSearchQuery, setAppSearchQuery] = useState('');
+  const [appSearchResults, setAppSearchResults] = useState([]);
+  const [appSearchLoading, setAppSearchLoading] = useState(false);
+  const [selectedSearchApp, setSelectedSearchApp] = useState(null);
+
   // 確認對話框回調
   const [confirmConfig, setConfirmConfig] = useState({ title: '', desc: '', onYes: () => {} });
 
@@ -178,8 +246,12 @@ export default function App() {
   const draggedIndexRef = useRef(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [draggingIndex, setDraggingIndex] = useState(null); // 目前正在被拖曳的卡片 index，用來套用漂浮特效
+  const [dragPreview, setDragPreview] = useState(null); // 桌面版拖曳時跟隨游標的浮動卡片預覽 {x, y, label, emoji}
   const autoScrollRafRef = useRef(null);
   const autoScrollClientYRef = useRef(null);
+
+  // 畫面 B 左滑返回清單用的觸控起點
+  const detailSwipeStartRef = useRef({ x: 0, y: 0 });
 
   const AUTO_SCROLL_EDGE = 90;        // 距離邊緣多少 px 開始觸發
   const AUTO_SCROLL_MIN_SPEED = 4;    // 剛超過邊界時的速度
@@ -366,8 +438,18 @@ export default function App() {
     }
 
     let content = '';
+    let appMeta = {};
     if (itemType === 'app') {
       content = isCustomScheme ? customAppInput.trim() : appScheme;
+      if (appSourceMode === 'search' && selectedSearchApp) {
+        appMeta = {
+          storeName: selectedSearchApp.trackName,
+          iosStoreUrl: selectedSearchApp.trackViewUrl || ''
+        };
+      } else {
+        const matchedApp = COUNTRY_APPS[appCountry].apps.find(a => a.scheme === appScheme);
+        appMeta = { storeName: (matchedApp && matchedApp.searchName) || itemName.trim() };
+      }
     } else {
       content = itemContent.trim();
     }
@@ -385,7 +467,8 @@ export default function App() {
       type: itemType,
       name: itemName.trim(),
       content: content,
-      emoji: finalEmoji
+      emoji: finalEmoji,
+      ...appMeta
     };
 
     const targetCapsule = capsules.find(c => c.id === activeCapsuleId);
@@ -410,7 +493,47 @@ export default function App() {
     setItemEmojiCustom('');
     setCustomAppInput('');
     setIsCustomScheme(false);
+    setAppSourceMode('country');
+    setAppSearchQuery('');
+    setAppSearchResults([]);
+    setSelectedSearchApp(null);
     await fetchCapsules();
+  };
+
+  // 使用 iTunes Search API 搜尋 App（免金鑰、支援 CORS）
+  const handleAppSearch = async () => {
+    const q = appSearchQuery.trim();
+    if (!q) return;
+    setAppSearchLoading(true);
+    setAppSearchResults([]);
+    try {
+      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=software&limit=8`);
+      const data = await res.json();
+      setAppSearchResults(data.results || []);
+    } catch (err) {
+      console.error('App 搜尋失敗:', err);
+      alert('搜尋失敗，請檢查網路連線後再試一次。');
+    }
+    setAppSearchLoading(false);
+  };
+
+  const handleSelectSearchApp = (app) => {
+    setSelectedSearchApp(app);
+    setItemName(app.trackName || '');
+    const bundleId = app.bundleId || '';
+    setCustomAppInput(bundleId ? `${bundleId}://` : '');
+    setIsCustomScheme(true);
+  };
+
+  const handleOpenAppItem = (item) => {
+    const storeName = item.storeName || item.name;
+    const { ios, android } = buildStoreUrls(storeName);
+    openAppOrStore({
+      scheme: item.content,
+      iosStoreUrl: item.iosStoreUrl || ios,
+      androidStoreUrl: android,
+      appLabel: item.name
+    });
   };
 
   const handleCopyItem = async () => {
@@ -485,16 +608,30 @@ export default function App() {
   };
 
   // 桌面端滑鼠拖曳排序 (HTML5 Drag & Drop)
-  const handleDragStart = (e, index) => {
+  // label/emoji 用於渲染跟隨游標的浮動預覽卡片，讓使用者更清楚看到「正在拖曳什麼、移動到哪裡」
+  const handleDragStart = (e, index, label, emoji) => {
     isDraggingRef.current = true;
     draggedIndexRef.current = index;
     setDraggingIndex(index);
     document.documentElement.style.touchAction = 'none';
     document.body.style.touchAction = 'none';
     e.dataTransfer.effectAllowed = 'move';
+
+    // 隱藏瀏覽器原生的拖曳殘影，改用自訂的浮動卡片跟隨游標
+    const emptyImg = new Image();
+    emptyImg.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBTAA7';
+    e.dataTransfer.setDragImage(emptyImg, 0, 0);
+
+    setDragPreview({ x: e.clientX, y: e.clientY, label, emoji });
     setTimeout(() => {
       e.target.classList.add('opacity-40');
     }, 0);
+  };
+
+  // 拖曳中持續觸發，讓浮動預覽卡片即時跟隨游標移動
+  const handleDrag = (e) => {
+    if (e.clientX === 0 && e.clientY === 0) return; // 部分瀏覽器在拖曳結束瞬間會送出 (0,0)，忽略避免跳動
+    setDragPreview(prev => (prev ? { ...prev, x: e.clientX, y: e.clientY } : prev));
   };
 
   const handleDragEnd = (e) => {
@@ -502,6 +639,7 @@ export default function App() {
     e.target.classList.remove('opacity-40');
     setDragOverIndex(null);
     setDraggingIndex(null);
+    setDragPreview(null);
     document.documentElement.style.touchAction = '';
     document.body.style.touchAction = '';
     stopAutoScroll();
@@ -592,6 +730,22 @@ export default function App() {
   
     draggedIndexRef.current = null;
     setDragOverIndex(null);
+  };
+
+  // 畫面 B（行程細節頁）：手機左滑手勢返回清單
+  const handleDetailTouchStart = (e) => {
+    const t = e.touches[0];
+    detailSwipeStartRef.current = { x: t.clientX, y: t.clientY };
+  };
+
+  const handleDetailTouchEnd = (e) => {
+    if (isDraggingRef.current) return; // 排序拖曳中不觸發返回
+    const t = e.changedTouches[0];
+    const diffX = detailSwipeStartRef.current.x - t.clientX;
+    const diffY = Math.abs(detailSwipeStartRef.current.y - t.clientY);
+    if (diffX > 80 && diffY < 60) {
+      setCurrentView('home');
+    }
   };
 
   // 包裝卡片：維持深綠色遮罩
@@ -705,7 +859,8 @@ export default function App() {
                       <div
                         data-index={index}
                         draggable
-                        onDragStart={(e) => handleDragStart(e, index)}
+                        onDragStart={(e) => handleDragStart(e, index, cap.title, '📦')}
+                        onDrag={handleDrag}
                         onDragEnd={handleDragEnd}
                         onDragOver={(e) => handleDragOver(e, index, e.currentTarget)}
                         onDrop={(e) => handleDrop(e, index, 'capsules')}
@@ -742,7 +897,7 @@ export default function App() {
                           transform: isSwiped ? 'translateX(-112px)' : 'translateX(0px)',
                           transition: 'transform 0.25s ease-in-out'
                         }}
-                        className={`${cap.bg_url ? '' : 'bg-white'} p-5 border relative cursor-pointer flex justify-between items-center touch-manipulation transition-all duration-150 ${
+                        className={`${cap.bg_url ? '' : 'bg-white'} rounded-2xl p-5 border relative cursor-pointer flex justify-between items-center touch-manipulation transition-all duration-150 ${
                           index === draggingIndex 
                             ? 'z-30 scale-[1.04] shadow-2xl border-[#C0624A] border-2 -rotate-1' 
                             : `z-10 border-[#7A8A6A]/20 ${(isTopBorder || isBottomBorder) ? 'scale-[1.01]' : ''}`
@@ -794,12 +949,15 @@ export default function App() {
           }
 
           return (
-            <div>
-              <div className="mb-4 flex justify-between items-center">
+            <div onTouchStart={handleDetailTouchStart} onTouchEnd={handleDetailTouchEnd}>
+              <div className="mb-4 flex justify-between items-center flex-wrap gap-2">
                 <button onClick={() => setCurrentView('home')} className="inline-flex items-center text-xs font-bold text-white bg-[#C0624A] hover:bg-[#A8533E] px-3 py-2 rounded-xl backdrop-blur transition shadow-sm">
                   ⬅️ 返回清單
                 </button>
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2 sm:space-x-3">
+                  <button onClick={() => shareContent(target.title, buildCapsuleShareText(target))} className="text-xs text-[#3A4F41] hover:text-[#C0624A] bg-white px-3 py-1.5 rounded-xl border border-[#7A8A6A]/40 font-medium transition shadow-sm">
+                    🔗 分享
+                  </button>
                   <button onClick={() => setEditBgModalOpen(true)} className="text-xs text-[#3A4F41] hover:text-[#C0624A] bg-white px-3 py-1.5 rounded-xl border border-[#7A8A6A]/40 font-medium transition shadow-sm">
                     🖼️ 設定背景照片
                   </button>
@@ -812,6 +970,7 @@ export default function App() {
                   </button>
                 </div>
               </div>
+              <p className="text-[10px] text-[#7A8A6A] mb-3 sm:hidden">👈 在此頁面向左滑動可快速返回清單</p>
 
               {/* 包裝名稱顯示 / 編輯區 */}
               <div 
@@ -889,7 +1048,7 @@ export default function App() {
                     if (item.type === 'link') {
                       actionHtml = <a href={item.content} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-xs bg-[#E8D5B0]/50 text-[#3A4F41] px-3 py-1.5 rounded-xl font-medium hover:bg-[#E8D5B0]">開啟</a>;
                     } else if (item.type === 'app') {
-                      actionHtml = <a href={item.content} onClick={(e) => e.stopPropagation()} className="text-xs bg-[#E8D5B0]/50 text-[#3A4F41] px-3 py-1.5 rounded-xl font-medium hover:bg-[#E8D5B0]">App</a>;
+                      actionHtml = <button onClick={(e) => { e.stopPropagation(); handleOpenAppItem(item); }} className="text-xs bg-[#E8D5B0]/50 text-[#3A4F41] px-3 py-1.5 rounded-xl font-medium hover:bg-[#E8D5B0]">App</button>;
                     } else if (item.type === 'file') {
                       actionHtml = item.content.startsWith('http') ?
                         <a href={item.content} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-xs bg-[#E8D5B0]/50 text-[#C0624A] px-3 py-1.5 rounded-xl font-medium hover:bg-[#E8D5B0]">檔案</a> :
@@ -906,7 +1065,8 @@ export default function App() {
                         key={item.id}
                         data-index={index}
                         draggable={itemSortMode === 'manual'}
-                        onDragStart={(e) => itemSortMode === 'manual' && handleDragStart(e, index)}
+                        onDragStart={(e) => itemSortMode === 'manual' && handleDragStart(e, index, item.name, item.emoji || '🌐')}
+                        onDrag={itemSortMode === 'manual' ? handleDrag : undefined}
                         onDragEnd={handleDragEnd}
                         onDragOver={(e) => itemSortMode === 'manual' && handleDragOver(e, index, e.currentTarget)}
                         onDrop={(e) => itemSortMode === 'manual' && handleDrop(e, index, 'items')}
@@ -1018,9 +1178,21 @@ export default function App() {
                 )}
               </div>
 
-              <button onClick={() => { setItemName(''); setItemContent(''); setItemEmojiSelect('✈️'); setItemEmojiCustom(''); setItemModalOpen(true); }} className="w-full py-3 bg-[#C0624A] hover:bg-[#A8533E] text-white rounded-2xl text-xs font-bold shadow-sm transition active:scale-[0.99]">
-                + 新增資源 / 喚醒 App 到此包裝
-              </button>
+              {/* 手機版底部留白，避免內容被下方固定按鈕遮住 */}
+              <div className="h-20 sm:hidden" aria-hidden="true" />
+
+              <div className="fixed sm:static bottom-0 inset-x-0 sm:inset-auto z-40 sm:z-auto px-4 sm:px-0 pt-4 sm:pt-0 pb-[calc(env(safe-area-inset-bottom)+14px)] sm:pb-0 bg-gradient-to-t from-[#E8D5B0] via-[#E8D5B0]/95 to-transparent sm:bg-none">
+                <div className="max-w-4xl mx-auto">
+                  <button onClick={() => {
+                    setItemName(''); setItemContent(''); setItemEmojiSelect('✈️'); setItemEmojiCustom('');
+                    setAppSourceMode('country'); setAppSearchQuery(''); setAppSearchResults([]); setSelectedSearchApp(null);
+                    setItemType('link'); setIsCustomScheme(false); setCustomAppInput('');
+                    setItemModalOpen(true);
+                  }} className="w-full py-3 bg-[#C0624A] hover:bg-[#A8533E] text-white rounded-2xl text-xs font-bold shadow-lg transition active:scale-[0.99]">
+                    + 新增資源 / 喚醒 App 到此包裝
+                  </button>
+                </div>
+              </div>
             </div>
           );
         })()}
@@ -1039,7 +1211,17 @@ export default function App() {
                 <button onClick={() => setCurrentView('detail')} className="inline-flex items-center text-xs font-bold text-white bg-[#C0624A] hover:bg-[#A8533E] px-3 py-2 rounded-xl backdrop-blur transition shadow-sm">
                   ⬅️ 返回包裝
                 </button>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 flex-wrap gap-y-2">
+                  <button
+                    onClick={() => shareContent(
+                      targetItem.name,
+                      `${targetItem.emoji || '🌐'} ${targetItem.name}\n${targetItem.content}`,
+                      targetItem.type === 'link' ? targetItem.content : undefined
+                    )}
+                    className="bg-white hover:bg-[#E8D5B0]/30 text-[#3A4F41] px-3 py-2 rounded-xl text-xs font-bold transition shadow-sm border border-[#7A8A6A]/40"
+                  >
+                    🔗 分享
+                  </button>
                   <button 
                     onClick={() => {
                       setItemToCopy(targetItem);
@@ -1056,6 +1238,9 @@ export default function App() {
                   )}
                   {targetItem.type === 'link' && (
                     <a href={targetItem.content} target="_blank" rel="noreferrer" className="bg-[#C0624A] hover:bg-[#A8533E] text-white px-3 py-2 rounded-xl text-xs font-bold transition shadow-sm inline-flex items-center">🌐 前往網頁</a>
+                  )}
+                  {targetItem.type === 'app' && (
+                    <button onClick={() => handleOpenAppItem(targetItem)} className="bg-[#C0624A] hover:bg-[#A8533E] text-white px-3 py-2 rounded-xl text-xs font-bold transition shadow-sm inline-flex items-center">📱 喚醒 App</button>
                   )}
 
                   {!isEditingItem ? (
@@ -1130,11 +1315,11 @@ export default function App() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-[#7A8A6A] mb-1">內容 / 網址 / 路徑 / 筆記</label>
+                  <label className="block text-xs font-semibold text-[#7A8A6A] mb-1">{targetItem.type === 'note' ? '筆記內容' : '內容 / 網址 / 路徑'}</label>
                   {!isEditingItem ? (
-                    <div className="p-3 bg-[#E8D5B0]/20 rounded-xl border border-[#7A8A6A]/20 text-xs text-[#3A4F41] break-all whitespace-pre-wrap">{targetItem.content}</div>
+                    <div className={`p-3 bg-[#E8D5B0]/20 rounded-xl border border-[#7A8A6A]/20 text-xs text-[#3A4F41] break-all whitespace-pre-wrap ${targetItem.type === 'note' ? 'min-h-[220px]' : ''}`}>{targetItem.content}</div>
                   ) : (
-                    <textarea id="editItemContent" rows={5} defaultValue={targetItem.content} className="w-full border border-[#7A8A6A]/40 rounded-xl p-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#C0624A]"></textarea>
+                    <textarea id="editItemContent" rows={targetItem.type === 'note' ? 12 : 5} defaultValue={targetItem.content} className="w-full border border-[#7A8A6A]/40 rounded-xl p-3 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#C0624A] resize-y"></textarea>
                   )}
                 </div>
               </div>
@@ -1314,45 +1499,123 @@ VITE_SUPABASE_ANON_KEY=你的專案Anon_Key`}
 
               {itemType === 'app' ? (
                 <div>
-                  <label className="block text-xs font-semibold text-[#7A8A6A] mb-1">1. 選擇國家 / 地區</label>
-                  <select value={appCountry} onChange={(e) => {
-                    const c = e.target.value;
-                    setAppCountry(c);
-                    setAppScheme(COUNTRY_APPS[c].apps[0].scheme);
-                    setIsCustomScheme(false);
-                  }} className="w-full border border-[#7A8A6A]/40 rounded-lg px-3 py-2 text-xs sm:text-sm bg-white mb-2">
-                    <option value="jp">🇯🇵 日本</option>
-                    <option value="kr">🇰🇷 南韓</option>
-                    <option value="th">🇹🇭 泰國</option>
-                    <option value="sg">🇸🇬 新加坡</option>
-                    <option value="us">🇺🇸 美國</option>
-                    <option value="vn">🇻🇳 越南</option>
-                    <option value="eu">🇪🇺 歐洲</option>
-                    <option value="global">🌍 全球通用</option>
-                  </select>
+                  {/* App 加入方式切換：依國家選擇 or 自行搜尋 */}
+                  <div className="inline-flex bg-[#E8D5B0]/40 rounded-xl p-1 border border-[#7A8A6A]/30 text-xs shadow-sm mb-3 w-full">
+                    <button
+                      type="button"
+                      onClick={() => setAppSourceMode('country')}
+                      className={`flex-1 px-2.5 py-1.5 rounded-lg font-medium transition ${appSourceMode === 'country' ? 'bg-[#C0624A] text-white shadow-sm' : 'text-[#3A4F41] hover:bg-white/60'}`}
+                    >
+                      🌍 依國家選擇
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setAppSourceMode('search')}
+                      className={`flex-1 px-2.5 py-1.5 rounded-lg font-medium transition ${appSourceMode === 'search' ? 'bg-[#C0624A] text-white shadow-sm' : 'text-[#3A4F41] hover:bg-white/60'}`}
+                    >
+                      🔍 自行搜尋 App
+                    </button>
+                  </div>
 
-                  <label className="block text-xs font-semibold text-[#7A8A6A] mb-1">2. 選擇 App 與 URL Scheme</label>
-                  <select value={isCustomScheme ? 'custom' : appScheme} onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === 'custom') {
-                      setIsCustomScheme(true);
-                    } else {
-                      setIsCustomScheme(false);
-                      setAppScheme(val);
-                    }
-                  }} className="w-full border border-[#7A8A6A]/40 rounded-lg px-3 py-2 text-xs sm:text-sm bg-white mb-2">
-                    {COUNTRY_APPS[appCountry].apps.map((app, idx) => (
-                      <option key={idx} value={app.scheme}>{app.name} ({app.scheme})</option>
-                    ))}
-                    <option value="custom">✏️ 自選 / 手動輸入其他 Scheme</option>
-                  </select>
-
-                  {isCustomScheme && (
+                  {appSourceMode === 'country' ? (
                     <div>
-                      <label className="block text-xs font-semibold text-[#C0624A] mb-1">3. 手動輸入自訂 Scheme</label>
-                      <input type="text" value={customAppInput} onChange={(e) => setCustomAppInput(e.target.value)} placeholder="例如：instagram://" className="w-full border border-[#7A8A6A]/40 rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#C0624A]" />
+                      <label className="block text-xs font-semibold text-[#7A8A6A] mb-1">1. 選擇國家 / 地區</label>
+                      <select value={appCountry} onChange={(e) => {
+                        const c = e.target.value;
+                        setAppCountry(c);
+                        setAppScheme(COUNTRY_APPS[c].apps[0].scheme);
+                        setIsCustomScheme(false);
+                      }} className="w-full border border-[#7A8A6A]/40 rounded-lg px-3 py-2 text-xs sm:text-sm bg-white mb-2">
+                        <option value="jp">🇯🇵 日本</option>
+                        <option value="kr">🇰🇷 南韓</option>
+                        <option value="th">🇹🇭 泰國</option>
+                        <option value="sg">🇸🇬 新加坡</option>
+                        <option value="us">🇺🇸 美國</option>
+                        <option value="vn">🇻🇳 越南</option>
+                        <option value="eu">🇪🇺 歐洲</option>
+                        <option value="global">🌍 全球通用</option>
+                      </select>
+
+                      <label className="block text-xs font-semibold text-[#7A8A6A] mb-1">2. 選擇 App 與 URL Scheme</label>
+                      <select value={isCustomScheme ? 'custom' : appScheme} onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === 'custom') {
+                          setIsCustomScheme(true);
+                        } else {
+                          setIsCustomScheme(false);
+                          setAppScheme(val);
+                        }
+                      }} className="w-full border border-[#7A8A6A]/40 rounded-lg px-3 py-2 text-xs sm:text-sm bg-white mb-2">
+                        {COUNTRY_APPS[appCountry].apps.map((app, idx) => (
+                          <option key={idx} value={app.scheme}>{app.name} ({app.scheme})</option>
+                        ))}
+                        <option value="custom">✏️ 自選 / 手動輸入其他 Scheme</option>
+                      </select>
+
+                      {isCustomScheme && (
+                        <div>
+                          <label className="block text-xs font-semibold text-[#C0624A] mb-1">3. 手動輸入自訂 Scheme</label>
+                          <input type="text" value={customAppInput} onChange={(e) => setCustomAppInput(e.target.value)} placeholder="例如：instagram://" className="w-full border border-[#7A8A6A]/40 rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#C0624A]" />
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-xs font-semibold text-[#7A8A6A] mb-1">輸入 App 名稱搜尋</label>
+                      <div className="flex gap-2 mb-2">
+                        <input
+                          type="text"
+                          value={appSearchQuery}
+                          onChange={(e) => setAppSearchQuery(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAppSearch(); } }}
+                          placeholder="例如：Booking.com"
+                          className="flex-1 border border-[#7A8A6A]/40 rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#C0624A]"
+                        />
+                        <button type="button" onClick={handleAppSearch} disabled={appSearchLoading} className="px-3 py-2 rounded-lg text-xs sm:text-sm font-bold bg-[#3A4F41] text-white hover:bg-[#2E3F34] transition disabled:opacity-50 shrink-0">
+                          {appSearchLoading ? '搜尋中…' : '搜尋'}
+                        </button>
+                      </div>
+
+                      {appSearchResults.length > 0 && (
+                        <div className="max-h-48 overflow-y-auto space-y-1.5 mb-2 border border-[#7A8A6A]/20 rounded-lg p-1.5 bg-[#E8D5B0]/10">
+                          {appSearchResults.map((app) => (
+                            <button
+                              type="button"
+                              key={app.trackId}
+                              onClick={() => handleSelectSearchApp(app)}
+                              className={`w-full flex items-center gap-2 p-1.5 rounded-lg text-left transition ${selectedSearchApp?.trackId === app.trackId ? 'bg-[#C0624A]/15 border border-[#C0624A]' : 'hover:bg-white border border-transparent'}`}
+                            >
+                              {app.artworkUrl60 && <img src={app.artworkUrl60} alt={app.trackName} className="w-8 h-8 rounded-lg shrink-0" />}
+                              <span className="text-xs font-medium text-[#3A4F41] truncate">{app.trackName}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {!appSearchLoading && appSearchQuery && appSearchResults.length === 0 && (
+                        <p className="text-[11px] text-[#7A8A6A] mb-2">尚無結果，請按搜尋按鈕或換個關鍵字試試。</p>
+                      )}
+
+                      {selectedSearchApp && (
+                        <div className="p-2.5 bg-white rounded-lg border border-[#7A8A6A]/30 mb-2">
+                          <p className="text-[11px] text-[#7A8A6A] mb-1">已選擇：<span className="font-bold text-[#3A4F41]">{selectedSearchApp.trackName}</span></p>
+                          <label className="block text-[11px] font-semibold text-[#7A8A6A] mb-1">喚醒 Scheme（可視需要手動修改）</label>
+                          <input type="text" value={customAppInput} onChange={(e) => setCustomAppInput(e.target.value)} placeholder="例如：instagram://" className="w-full border border-[#7A8A6A]/40 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-[#C0624A]" />
+                          <p className="text-[10px] text-[#7A8A6A] mt-1">找不到或無法開啟時，會自動導向 App Store / Google Play 搜尋頁面。</p>
+                        </div>
+                      )}
                     </div>
                   )}
+                </div>
+              ) : itemType === 'note' ? (
+                <div>
+                  <label className="block text-xs font-semibold text-[#7A8A6A] mb-1">筆記內容（可換行）</label>
+                  <textarea
+                    value={itemContent}
+                    onChange={(e) => setItemContent(e.target.value)}
+                    rows={8}
+                    placeholder="在這裡自由記錄任何想法、注意事項或備忘…"
+                    className="w-full border border-[#7A8A6A]/40 rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#C0624A] resize-y"
+                  />
                 </div>
               ) : (
                 <div>
@@ -1363,7 +1626,10 @@ VITE_SUPABASE_ANON_KEY=你的專案Anon_Key`}
             </div>
 
             <div className="flex justify-end space-x-2 pt-2 border-t border-[#7A8A6A]/20 shrink-0">
-              <button onClick={() => setItemModalOpen(false)} className="px-4 py-2 text-xs sm:text-sm text-[#7A8A6A] hover:bg-[#E8D5B0]/30 rounded-lg">取消</button>
+              <button onClick={() => {
+                setItemModalOpen(false);
+                setAppSourceMode('country'); setAppSearchQuery(''); setAppSearchResults([]); setSelectedSearchApp(null);
+              }} className="px-4 py-2 text-xs sm:text-sm text-[#7A8A6A] hover:bg-[#E8D5B0]/30 rounded-lg">取消</button>
               <button onClick={handleCreateItem} className="px-4 py-2 text-xs sm:text-sm bg-[#C0624A] text-white rounded-lg hover:bg-[#A8533E]">新增</button>
             </div>
           </div>
@@ -1380,6 +1646,17 @@ VITE_SUPABASE_ANON_KEY=你的專案Anon_Key`}
               <button onClick={() => { setConfirmModalOpen(false); confirmConfig.onYes(); }} className="flex-1 px-4 py-2.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl">確定</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* 桌面版拖曳排序時，跟隨游標移動的浮動預覽卡片，讓使用者清楚看到正在移動哪個項目 */}
+      {dragPreview && (
+        <div
+          className="fixed z-[100] pointer-events-none hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#3A4F41] text-white text-xs font-bold shadow-2xl border-2 border-[#C0624A] rotate-2 transition-transform duration-75"
+          style={{ left: dragPreview.x + 18, top: dragPreview.y + 18 }}
+        >
+          {dragPreview.emoji && <span className="text-sm">{dragPreview.emoji}</span>}
+          <span className="max-w-[180px] truncate">{dragPreview.label}</span>
         </div>
       )}
 
