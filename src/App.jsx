@@ -129,11 +129,12 @@ const buildStoreUrls = (appName) => ({
 // 若非手機瀏覽，直接提示僅能於手機開啟
 const openAppOrStore = ({ scheme, iosStoreUrl, androidStoreUrl, appLabel }) => {
   if (!isMobileDevice()) {
-    alert(`「${appLabel || '此項目'}」為手機 App 捷徑，僅能在手機瀏覽器中開啟喚醒，請改用手機掃描 QR Code 或直接於手機上開啟本頁面。`);
+    alert(`「${appLabel || '此項目'}」為手機 App 捷徑，僅能在手機瀏覽器中開啟喚醒，請改用手機掃描 QR Code。`);
     return;
   }
-
   const fallbackUrl = isIOSDevice() ? iosStoreUrl : androidStoreUrl;
+  const startTime = Date.now();
+  
   let didLeave = false;
   const handleVisibility = () => { if (document.hidden) didLeave = true; };
   document.addEventListener('visibilitychange', handleVisibility);
@@ -142,7 +143,8 @@ const openAppOrStore = ({ scheme, iosStoreUrl, androidStoreUrl, appLabel }) => {
 
   setTimeout(() => {
     document.removeEventListener('visibilitychange', handleVisibility);
-    if (!didLeave && fallbackUrl) {
+    const timeElapsed = Date.now() - startTime;
+    if (timeElapsed < 2000 && !didLeave && fallbackUrl) {
       window.location.href = fallbackUrl;
     }
   }, 1500);
@@ -739,14 +741,15 @@ export default function App() {
   };
 
   const handleDetailTouchEnd = (e) => {
-    if (isDraggingRef.current) return; // 排序拖曳中不觸發返回
+    if (isDraggingRef.current) return;
     const t = e.changedTouches[0];
     const diffX = detailSwipeStartRef.current.x - t.clientX;
     const diffY = Math.abs(detailSwipeStartRef.current.y - t.clientY);
-    if (diffX > 80 && diffY < 60) {
+    // 必須明顯向左滑，且 Y 軸偏移不大
+    if (diffX > 70 && diffY < 40) {
       setCurrentView('home');
     }
-  };
+  };  
 
   // 包裝卡片：維持深綠色遮罩
   const getCardBgStyle = (bgUrl) => {
@@ -1620,7 +1623,13 @@ VITE_SUPABASE_ANON_KEY=你的專案Anon_Key`}
               ) : (
                 <div>
                   <label className="block text-xs font-semibold text-[#7A8A6A] mb-1">內容 / 網址 / 備忘說明</label>
-                  <input type="text" value={itemContent} onChange={(e) => setItemContent(e.target.value)} placeholder={itemType === 'file' ? "https://drive.google.com/..." : "https://... 或 文字說明"} className="w-full border border-[#7A8A6A]/40 rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#C0624A]" />
+                  <textarea
+                    value={itemContent}
+                    onChange={(e) => setItemContent(e.target.value)}
+                    rows={4}
+                    placeholder={itemType === 'file' ? "https://drive.google.com/..." : "請輸入內容、網址或備忘..."}
+                    className="w-full border border-[#7A8A6A]/40 rounded-lg px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#C0624A] resize-y whitespace-pre-wrap"
+                  />                
                 </div>
               )}
             </div>
