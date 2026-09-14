@@ -775,7 +775,10 @@ export default function App() {
         
         {/* 頂部導覽列與專屬 Logo */}
         <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b pb-4 gap-4 border-[#7A8A6A]/30">
-          <div className="flex items-center space-x-3.5">
+          <div className="flex items-center space-x-3.5 cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={() => setCurrentView('home')}
+              title="回首頁"
+          >
             <div className="w-14 h-14 bg-white rounded-2xl shadow-sm border border-[#7A8A6A]/30 flex items-center justify-center p-1.5 shrink-0 overflow-hidden">
               <img 
                 src={logoImg}
