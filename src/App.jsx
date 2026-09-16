@@ -335,11 +335,15 @@ export default function App() {
 
     // 先確保有一個（匿名）登入 session，auth.uid() 才會有值，RLS 政策才能判斷擁有者。
     // 沒有 session 時仍會繼續讀取資料——此時只讀得到已公開分享的包裝。
+    //
+    // 注意：這裡刻意用 getUser() 而不是 getSession()。
+    // getSession() 只讀本機快取（IndexedDB），不會跟伺服器確認，快取若殘留/共用會誤判成「已登入」而跳過匿名登入。
+    // getUser() 會實際發一個請求問伺服器「這個使用者現在還有效嗎」，能避免這種誤判。
     const bootstrap = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          setUserId(session.user.id);
+        const { data: { user }, error: getUserError } = await supabase.auth.getUser();
+        if (user && !getUserError) {
+          setUserId(user.id);
         } else {
           const { data, error } = await supabase.auth.signInAnonymously();
           if (error) {
