@@ -148,37 +148,67 @@ const openAppOrStore = ({ scheme, iosStoreUrl, androidStoreUrl, appLabel }) => {
   }, 1500);
 };
 
-// ============ 分享功能 ============
-const shareContent = async (title, text, url) => {
-  if (navigator.share) {
-    try {
-      await navigator.share(url ? { title, text, url } : { title, text });
-    } catch (err) {
-      if (err && err.name !== 'AbortError') console.error('分享失敗:', err);
-    }
-    return;
-  }
-  if (navigator.clipboard) {
-    try {
-      await navigator.clipboard.writeText(url ? `${text}\n${url}` : text);
-      alert('已複製分享內容到剪貼簿，貼上即可分享給朋友！');
-    } catch (err) {
-      alert('分享功能無法使用，請手動複製內容分享。');
-    }
-    return;
-  }
-  alert('此瀏覽器不支援分享功能。');
+// ============ 深層連結：用網址參數定位到特定旅行包裝 / 資源 ============
+// 格式：?capsule=<包裝id>            → 直接開啟該旅行包裝 (畫面 B)
+//       ?capsule=<包裝id>&item=<資源id> → 直接開啟該資源詳細頁 (畫面 C)
+const readUrlState = () => {
+  const params = new URLSearchParams(window.location.search);
+  return {
+    capsuleId: params.get('capsule') || null,
+    itemId: params.get('item') || null
+  };
 };
 
-const buildCapsuleShareText = (cap) => {
-  const items = cap.items || [];
-  const lines = items.map(i => `${i.emoji || '🌐'} ${i.name}${i.type === 'note' ? `：${i.content}` : ''}`);
-  return `📦 ${cap.title}\n包含 ${items.length} 項資源與捷徑\n\n${lines.join('\n')}\n\n— 來自 travel capsule`;
+const buildUrlFor = (view, capsuleId, itemId) => {
+  const params = new URLSearchParams(window.location.search);
+  params.delete('capsule');
+  params.delete('item');
+
+  if ((view === 'detail' || view === 'itemDetail') && capsuleId) {
+    params.set('capsule', capsuleId);
+    if (view === 'itemDetail' && itemId) params.set('item', itemId);
+  }
+
+  const qs = params.toString();
+  return `${window.location.pathname}${qs ? `?${qs}` : ''}${window.location.hash || ''}`;
+};
+
+// ============ 分享功能：分享目前這個頁面的網址 ============
+const sharePageUrl = async (title, view, capsuleId, itemId) => {
+  // 直接依目前所在的畫面組出可定位的網址，不依賴網址列是否已同步
+  const url = `${window.location.origin}${buildUrlFor(view, capsuleId, itemId)}`;
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: title || document.title, url });
+      return;
+    } catch (err) {
+      if (err && err.name === 'AbortError') return; // 使用者自行取消，不再 fallback
+      console.error('分享失敗:', err);
+    }
+  }
+
+  if (navigator.clipboard) {
+    try {
+      await navigator.clipboard.writeText(url);
+      alert('已複製本頁網址到剪貼簿，貼上即可分享給朋友！');
+      return;
+    } catch (err) {
+      console.error('複製失敗:', err);
+    }
+  }
+
+  window.prompt('請手動複製以下網址分享：', url);
 };
 
 export default function App() {
   const [capsules, setCapsules] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [hasFetchedOnce, setHasFetchedOnce] = useState(false);
+
+  // 目前使用者（匿名登入）的 id，RLS 用它判斷資料擁有者
+  const [userId, setUserId] = useState(null);
+  const [authError, setAuthError] = useState('');
 
   // 導覽狀態
   const [currentView, setCurrentView] = useState('home'); // 'home' | 'detail' | 'itemDetail'
@@ -246,12 +276,8 @@ export default function App() {
   const draggedIndexRef = useRef(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [draggingIndex, setDraggingIndex] = useState(null); // 目前正在被拖曳的卡片 index，用來套用漂浮特效
-  const [dragPreview, setDragPreview] = useState(null); // 桌面版拖曳時跟隨游標的浮動卡片預覽 {x, y, label, emoji}
   const autoScrollRafRef = useRef(null);
   const autoScrollClientYRef = useRef(null);
-
-  // 畫面 B 左滑返回清單用的觸控起點
-  const detailSwipeStartRef = useRef({ x: 0, y: 0 });
 
   const AUTO_SCROLL_EDGE = 90;        // 距離邊緣多少 px 開始觸發
   const AUTO_SCROLL_MIN_SPEED = 4;    // 剛超過邊界時的速度
@@ -296,13 +322,122 @@ export default function App() {
     }
   };
 
+  // 深層連結：記住初次進站時網址帶的參數，等資料載入後再套用
+  const pendingDeepLinkRef = useRef(readUrlState());
+  const deepLinkAppliedRef = useRef(false);
+  const [deepLinkError, setDeepLinkError] = useState('');
+
   useEffect(() => {
     if (!supabase) {
       setConfigModalOpen(true);
-    } else {
-      fetchCapsules();
+      return;
     }
+
+    // 先確保有一個（匿名）登入 session，auth.uid() 才會有值，RLS 政策才能判斷擁有者。
+    // 沒有 session 時仍會繼續讀取資料——此時只讀得到已公開分享的包裝。
+    const bootstrap = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setUserId(session.user.id);
+        } else {
+          const { data, error } = await supabase.auth.signInAnonymously();
+          if (error) {
+            console.error('匿名登入失敗:', error.message);
+            setAuthError('尚未建立身分（請在 Supabase 後台啟用 Anonymous sign-ins），目前僅能檢視已公開分享的旅行包裝。');
+          } else {
+            setUserId(data?.user?.id || null);
+          }
+        }
+      } catch (err) {
+        console.error('身分初始化失敗:', err);
+      }
+      await fetchCapsules();
+    };
+
+    bootstrap();
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserId(session?.user?.id || null);
+    });
+    return () => listener?.subscription?.unsubscribe();
   }, []);
+
+  // 資料載入完成後，套用網址上的 ?capsule= / &item= 參數，直接跳到對應畫面
+  useEffect(() => {
+    if (deepLinkAppliedRef.current) return;
+    // 沒設定 Supabase 時不會有資料可比對，直接放行讓網址同步機制開始運作
+    if (supabase && !hasFetchedOnce) return;
+
+    const { capsuleId, itemId } = pendingDeepLinkRef.current;
+    deepLinkAppliedRef.current = true;
+    if (!capsuleId) return;
+
+    const cap = capsules.find(c => c.id === capsuleId);
+    if (!cap) {
+      setDeepLinkError('找不到這個旅行包裝，它可能已被刪除，或你沒有存取權限。');
+      return;
+    }
+
+    setActiveCapsuleId(cap.id);
+
+    if (itemId) {
+      const item = (cap.items || []).find(i => i.id === itemId);
+      if (item) {
+        setActiveItemId(item.id);
+        setIsEditingItem(false);
+        const isPreset = PRESET_EMOJIS.some(e => e.value === item.emoji);
+        setEditEmojiSelect(isPreset ? item.emoji : 'custom');
+        setEditEmojiCustom(isPreset ? '' : item.emoji);
+        setCurrentView('itemDetail');
+        return;
+      }
+      setDeepLinkError('找不到連結指向的資源，已為你開啟所屬的旅行包裝。');
+    }
+
+    setCurrentView('detail');
+  }, [capsules, hasFetchedOnce]);
+
+  // 導覽狀態改變時，同步更新瀏覽器網址（讓使用者可直接複製/加入書籤）
+  useEffect(() => {
+    // 深層連結尚未套用前不要覆寫網址，否則會把網址參數洗掉
+    if (!deepLinkAppliedRef.current) return;
+
+    const nextUrl = buildUrlFor(currentView, activeCapsuleId, activeItemId);
+    const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash || ''}`;
+    if (nextUrl !== currentUrl) {
+      window.history.pushState({ currentView, activeCapsuleId, activeItemId }, '', nextUrl);
+    }
+  }, [currentView, activeCapsuleId, activeItemId]);
+
+  // 支援瀏覽器上一頁/下一頁按鈕
+  useEffect(() => {
+    const onPopState = () => {
+      const { capsuleId, itemId } = readUrlState();
+
+      if (!capsuleId) {
+        setCurrentView('home');
+        return;
+      }
+
+      const cap = capsules.find(c => c.id === capsuleId);
+      if (!cap) {
+        setCurrentView('home');
+        return;
+      }
+
+      setActiveCapsuleId(cap.id);
+      if (itemId && (cap.items || []).some(i => i.id === itemId)) {
+        setActiveItemId(itemId);
+        setCurrentView('itemDetail');
+      } else {
+        setCurrentView('detail');
+      }
+    };
+
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [capsules]);
 
     // 拖曳排序時，用原生非被動監聽阻止手機瀏覽器的原生滑動手勢
   useEffect(() => {
@@ -321,6 +456,73 @@ export default function App() {
     document.body.style.overscrollBehaviorY = 'none';
   }, []);
 
+  // 畫面 B（行程細節頁）：手機左滑返回清單
+  // 用 window 層級的 capture 監聽，確保不會被卡片內 stopPropagation 的事件吃掉
+  useEffect(() => {
+    if (currentView !== 'detail') return;
+
+    let startX = 0;
+    let startY = 0;
+    let maxDeltaY = 0;
+    let tracking = false;
+
+    const isInteractive = (el) =>
+      !!(el && el.closest && el.closest('input, textarea, select, [contenteditable="true"], [data-no-swipe="true"]'));
+
+    const onTouchStart = (e) => {
+      // 有彈窗開啟、正在拖曳排序、或起點在輸入元件上時，都不啟動返回手勢
+      if (isDraggingRef.current || copyModalOpen || itemModalOpen || editBgModalOpen || confirmModalOpen || capsuleModalOpen || configModalOpen) {
+        tracking = false;
+        return;
+      }
+      if (e.touches.length !== 1 || isInteractive(e.target)) {
+        tracking = false;
+        return;
+      }
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      maxDeltaY = 0;
+      tracking = true;
+    };
+
+    const onTouchMove = (e) => {
+      if (!tracking || e.touches.length !== 1) return;
+      // 記錄整段手勢中偏離的最大垂直距離，垂直捲動時就不算左滑
+      maxDeltaY = Math.max(maxDeltaY, Math.abs(e.touches[0].clientY - startY));
+    };
+
+    const onTouchEnd = (e) => {
+      if (!tracking) return;
+      tracking = false;
+      if (isDraggingRef.current) return;
+
+      const touch = e.changedTouches[0];
+      if (!touch) return;
+
+      const deltaX = startX - touch.clientX;   // 向左滑為正值
+      const deltaY = Math.abs(touch.clientY - startY);
+
+      // 需為明顯的水平左滑：橫向距離足夠、且橫向遠大於縱向
+      if (deltaX > 70 && maxDeltaY < 45 && deltaX > deltaY * 1.5) {
+        setCurrentView('home');
+      }
+    };
+
+    const onTouchCancel = () => { tracking = false; };
+
+    window.addEventListener('touchstart', onTouchStart, { capture: true, passive: true });
+    window.addEventListener('touchmove', onTouchMove, { capture: true, passive: true });
+    window.addEventListener('touchend', onTouchEnd, { capture: true, passive: true });
+    window.addEventListener('touchcancel', onTouchCancel, { capture: true, passive: true });
+
+    return () => {
+      window.removeEventListener('touchstart', onTouchStart, { capture: true });
+      window.removeEventListener('touchmove', onTouchMove, { capture: true });
+      window.removeEventListener('touchend', onTouchEnd, { capture: true });
+      window.removeEventListener('touchcancel', onTouchCancel, { capture: true });
+    };
+  }, [currentView, copyModalOpen, itemModalOpen, editBgModalOpen, confirmModalOpen, capsuleModalOpen, configModalOpen]);
+
   const fetchCapsules = async () => {
     if (!supabase) return;
     setLoading(true);
@@ -335,6 +537,7 @@ export default function App() {
       setCapsules(data || []);
     }
     setLoading(false);
+    setHasFetchedOnce(true);
   };
 
   const uploadImageToStorage = async (file) => {
@@ -375,7 +578,9 @@ export default function App() {
       title: newCapsuleTitle.trim(),
       bg_url: bgUrl,
       items: [],
-      sort_order: capsules.length
+      sort_order: capsules.length,
+      is_public: false,        // 預設不公開，要分享時再由使用者自行開啟
+      owner_id: userId || null // RLS 用來判斷擁有者
     };
 
     const { error } = await supabase.from('capsules').insert([newCap]);
@@ -536,6 +741,35 @@ export default function App() {
     });
   };
 
+  // 切換旅行包裝的公開分享狀態
+  const handleTogglePublic = async (cap, nextValue) => {
+    const { error } = await supabase
+      .from('capsules')
+      .update({ is_public: nextValue })
+      .eq('id', cap.id);
+
+    if (error) {
+      alert('更新分享設定失敗: ' + error.message);
+      return false;
+    }
+
+    setCapsules(prev => prev.map(c => c.id === cap.id ? { ...c, is_public: nextValue } : c));
+    return true;
+  };
+
+  // 分享前先確認這個包裝已開放公開，否則對方打開連結會是空的
+  const handleShareCapsule = async (cap) => {
+    if (!cap.is_public) {
+      const ok = window.confirm(
+        `「${cap.title}」目前是私人的，對方開啟連結會看不到內容。\n\n要現在開啟公開分享並複製連結嗎？`
+      );
+      if (!ok) return;
+      const success = await handleTogglePublic(cap, true);
+      if (!success) return;
+    }
+    await sharePageUrl(cap.title, 'detail', cap.id);
+  };
+
   const handleCopyItem = async () => {
     if (!itemToCopy || !targetCopyCapsuleId) return;
 
@@ -608,30 +842,16 @@ export default function App() {
   };
 
   // 桌面端滑鼠拖曳排序 (HTML5 Drag & Drop)
-  // label/emoji 用於渲染跟隨游標的浮動預覽卡片，讓使用者更清楚看到「正在拖曳什麼、移動到哪裡」
-  const handleDragStart = (e, index, label, emoji) => {
+  const handleDragStart = (e, index) => {
     isDraggingRef.current = true;
     draggedIndexRef.current = index;
     setDraggingIndex(index);
     document.documentElement.style.touchAction = 'none';
     document.body.style.touchAction = 'none';
     e.dataTransfer.effectAllowed = 'move';
-
-    // 隱藏瀏覽器原生的拖曳殘影，改用自訂的浮動卡片跟隨游標
-    const emptyImg = new Image();
-    emptyImg.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBTAA7';
-    e.dataTransfer.setDragImage(emptyImg, 0, 0);
-
-    setDragPreview({ x: e.clientX, y: e.clientY, label, emoji });
     setTimeout(() => {
       e.target.classList.add('opacity-40');
     }, 0);
-  };
-
-  // 拖曳中持續觸發，讓浮動預覽卡片即時跟隨游標移動
-  const handleDrag = (e) => {
-    if (e.clientX === 0 && e.clientY === 0) return; // 部分瀏覽器在拖曳結束瞬間會送出 (0,0)，忽略避免跳動
-    setDragPreview(prev => (prev ? { ...prev, x: e.clientX, y: e.clientY } : prev));
   };
 
   const handleDragEnd = (e) => {
@@ -639,7 +859,6 @@ export default function App() {
     e.target.classList.remove('opacity-40');
     setDragOverIndex(null);
     setDraggingIndex(null);
-    setDragPreview(null);
     document.documentElement.style.touchAction = '';
     document.body.style.touchAction = '';
     stopAutoScroll();
@@ -732,22 +951,6 @@ export default function App() {
     setDragOverIndex(null);
   };
 
-  // 畫面 B（行程細節頁）：手機左滑手勢返回清單
-  const handleDetailTouchStart = (e) => {
-    const t = e.touches[0];
-    detailSwipeStartRef.current = { x: t.clientX, y: t.clientY };
-  };
-
-  const handleDetailTouchEnd = (e) => {
-    if (isDraggingRef.current) return; // 排序拖曳中不觸發返回
-    const t = e.changedTouches[0];
-    const diffX = detailSwipeStartRef.current.x - t.clientX;
-    const diffY = Math.abs(detailSwipeStartRef.current.y - t.clientY);
-    if (diffX > 80 && diffY < 60) {
-      setCurrentView('home');
-    }
-  };
-
   // 包裝卡片：維持深綠色遮罩
   const getCardBgStyle = (bgUrl) => {
     if (!bgUrl) return {};
@@ -814,6 +1017,20 @@ export default function App() {
           </div>
         )}
 
+        {authError && (
+          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg text-xs flex justify-between items-center gap-3">
+            <span>{authError}</span>
+            <button onClick={() => setAuthError('')} className="underline font-bold shrink-0">知道了</button>
+          </div>
+        )}
+
+        {deepLinkError && (
+          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg text-xs flex justify-between items-center gap-3">
+            <span>{deepLinkError}</span>
+            <button onClick={() => setDeepLinkError('')} className="underline font-bold shrink-0">知道了</button>
+          </div>
+        )}
+
         {loading && <div className="text-center py-12 text-sm text-[#7A8A6A]">正在從 Supabase 讀取資料...</div>}
 
         {/* ================= 畫面 A：首頁清單 ================= */}
@@ -839,7 +1056,7 @@ export default function App() {
                   return (
                     <div 
                       key={cap.id} 
-                      className={`relative rounded-2xl shadow-sm hover:shadow-md transition-shadow ${index === draggingIndex ? 'overflow-visible' : 'overflow-hidden'}`}
+                      className={`relative rounded-2xl shadow-sm hover:shadow-md transition-shadow ${index === draggingIndex ? 'overflow-visible z-30' : 'overflow-hidden'}`}
                       onClick={(e) => e.stopPropagation()}
                     >
                       {/* 底層隱藏的刪除按鈕 (手機滑出顯示) */}
@@ -863,8 +1080,7 @@ export default function App() {
                       <div
                         data-index={index}
                         draggable
-                        onDragStart={(e) => handleDragStart(e, index, cap.title, '📦')}
-                        onDrag={handleDrag}
+                        onDragStart={(e) => handleDragStart(e, index)}
                         onDragEnd={handleDragEnd}
                         onDragOver={(e) => handleDragOver(e, index, e.currentTarget)}
                         onDrop={(e) => handleDrop(e, index, 'capsules')}
@@ -898,13 +1114,19 @@ export default function App() {
                         }}
                         style={{
                           ...capBgStyle,
-                          transform: isSwiped ? 'translateX(-112px)' : 'translateX(0px)',
-                          transition: 'transform 0.25s ease-in-out'
+                          // 注意：這裡是 inline transform，會覆蓋 Tailwind 的 scale/rotate class，
+                          // 所以拖曳時的縮放與傾斜必須一起寫在這裡，動畫才會與 B 頁面資源卡片一致
+                          transform: `${isSwiped ? 'translateX(-112px)' : 'translateX(0px)'}${
+                            index === draggingIndex
+                              ? ' scale(1.04) rotate(-1deg)'
+                              : (isTopBorder || isBottomBorder) ? ' scale(1.01)' : ''
+                          }`,
+                          transition: 'transform 0.15s ease-out'
                         }}
                         className={`${cap.bg_url ? '' : 'bg-white'} rounded-2xl p-5 border relative cursor-pointer flex justify-between items-center touch-manipulation transition-all duration-150 ${
                           index === draggingIndex 
-                            ? 'z-30 scale-[1.04] shadow-2xl border-[#C0624A] border-2 -rotate-1' 
-                            : `z-10 border-[#7A8A6A]/20 ${(isTopBorder || isBottomBorder) ? 'scale-[1.01]' : ''}`
+                            ? 'z-30 shadow-2xl border-[#C0624A] border-2' 
+                            : `z-10 border-[#7A8A6A]/20 hover:border-[#C0624A] shadow-sm ${(isTopBorder || isBottomBorder) ? 'ring-2 ring-[#C0624A]/40' : ''}`
                         }`}
                       >
                           {/* 插入位置指示條：絕對定位，不影響版面高度，避免拖曳卡頓 */}
@@ -926,7 +1148,9 @@ export default function App() {
                           </span>
                           <div className="truncate">
                             <h2 className={`font-bold ${textColor} text-base transition truncate`}>{cap.title}</h2>
-                            <p className={`text-xs ${subColor} mt-0.5`}>包含 {itemCount} 項資源與捷徑</p>
+                            <p className={`text-xs ${subColor} mt-0.5`}>
+                              包含 {itemCount} 項資源與捷徑{cap.is_public ? ' · 🌍 已公開分享' : ''}
+                            </p>
                           </div>
                         </div>
                         <span className={`${textColor} font-bold text-lg shrink-0 ml-2 z-10 group-hover:translate-x-1 transition-transform`}>›</span>
@@ -953,13 +1177,24 @@ export default function App() {
           }
 
           return (
-            <div onTouchStart={handleDetailTouchStart} onTouchEnd={handleDetailTouchEnd}>
+            <div>
               <div className="mb-4 flex justify-between items-center flex-wrap gap-2">
                 <button onClick={() => setCurrentView('home')} className="inline-flex items-center text-xs font-bold text-white bg-[#C0624A] hover:bg-[#A8533E] px-3 py-2 rounded-xl backdrop-blur transition shadow-sm">
                   ⬅️ 返回清單
                 </button>
                 <div className="flex items-center space-x-2 sm:space-x-3">
-                  <button onClick={() => shareContent(target.title, buildCapsuleShareText(target))} className="text-xs text-[#3A4F41] hover:text-[#C0624A] bg-white px-3 py-1.5 rounded-xl border border-[#7A8A6A]/40 font-medium transition shadow-sm">
+                  <button
+                    onClick={() => handleTogglePublic(target, !target.is_public)}
+                    title={target.is_public ? '目前已公開：任何取得連結的人都能檢視' : '目前為私人：只有你看得到'}
+                    className={`text-xs px-3 py-1.5 rounded-xl border font-medium transition shadow-sm ${
+                      target.is_public
+                        ? 'bg-[#3A4F41] text-white border-[#3A4F41] hover:bg-[#2E3F34]'
+                        : 'bg-white text-[#3A4F41] border-[#7A8A6A]/40 hover:text-[#C0624A]'
+                    }`}
+                  >
+                    {target.is_public ? '🌍 已公開' : '🔒 私人'}
+                  </button>
+                  <button onClick={() => handleShareCapsule(target)} className="text-xs text-[#3A4F41] hover:text-[#C0624A] bg-white px-3 py-1.5 rounded-xl border border-[#7A8A6A]/40 font-medium transition shadow-sm">
                     🔗 分享
                   </button>
                   <button onClick={() => setEditBgModalOpen(true)} className="text-xs text-[#3A4F41] hover:text-[#C0624A] bg-white px-3 py-1.5 rounded-xl border border-[#7A8A6A]/40 font-medium transition shadow-sm">
@@ -974,7 +1209,7 @@ export default function App() {
                   </button>
                 </div>
               </div>
-              <p className="text-[10px] text-[#7A8A6A] mb-3 sm:hidden">👈 在此頁面向左滑動可快速返回清單</p>
+              <p className="text-[10px] text-[#7A8A6A] mb-3 sm:hidden">👈 在畫面任一處向左滑動即可返回清單</p>
 
               {/* 包裝名稱顯示 / 編輯區 */}
               <div 
@@ -1069,8 +1304,7 @@ export default function App() {
                         key={item.id}
                         data-index={index}
                         draggable={itemSortMode === 'manual'}
-                        onDragStart={(e) => itemSortMode === 'manual' && handleDragStart(e, index, item.name, item.emoji || '🌐')}
-                        onDrag={itemSortMode === 'manual' ? handleDrag : undefined}
+                        onDragStart={(e) => itemSortMode === 'manual' && handleDragStart(e, index)}
                         onDragEnd={handleDragEnd}
                         onDragOver={(e) => itemSortMode === 'manual' && handleDragOver(e, index, e.currentTarget)}
                         onDrop={(e) => itemSortMode === 'manual' && handleDrop(e, index, 'items')}
@@ -1183,9 +1417,10 @@ export default function App() {
               </div>
 
               {/* 手機版底部留白，避免內容被下方固定按鈕遮住 */}
-              <div className="h-20 sm:hidden" aria-hidden="true" />
+              <div className="h-36 sm:hidden" aria-hidden="true" />
 
-              <div className="fixed sm:static bottom-0 inset-x-0 sm:inset-auto z-40 sm:z-auto px-4 sm:px-0 pt-4 sm:pt-0 pb-[calc(env(safe-area-inset-bottom)+14px)] sm:pb-0 bg-gradient-to-t from-[#E8D5B0] via-[#E8D5B0]/95 to-transparent sm:bg-none">
+              {/* 手機版固定於頁底；額外墊高 42px，避開 iPhone/Android 由底部上滑切換 App 的系統手勢區 */}
+              <div className="fixed sm:static bottom-0 inset-x-0 sm:inset-auto z-40 sm:z-auto px-4 sm:px-0 pt-6 sm:pt-0 pb-[calc(env(safe-area-inset-bottom)+42px)] sm:pb-0 bg-gradient-to-t from-[#E8D5B0] via-[#E8D5B0]/95 to-transparent sm:bg-none">
                 <div className="max-w-4xl mx-auto">
                   <button onClick={() => {
                     setItemName(''); setItemContent(''); setItemEmojiSelect('✈️'); setItemEmojiCustom('');
@@ -1217,11 +1452,17 @@ export default function App() {
                 </button>
                 <div className="flex items-center space-x-2 flex-wrap gap-y-2">
                   <button
-                    onClick={() => shareContent(
-                      targetItem.name,
-                      `${targetItem.emoji || '🌐'} ${targetItem.name}\n${targetItem.content}`,
-                      targetItem.type === 'link' ? targetItem.content : undefined
-                    )}
+                    onClick={async () => {
+                      if (!targetCapsule.is_public) {
+                        const ok = window.confirm(
+                          `此資源所屬的「${targetCapsule.title}」目前是私人的，對方開啟連結會看不到內容。\n\n要現在開啟公開分享並複製連結嗎？`
+                        );
+                        if (!ok) return;
+                        const success = await handleTogglePublic(targetCapsule, true);
+                        if (!success) return;
+                      }
+                      await sharePageUrl(targetItem.name, 'itemDetail', targetCapsule.id, targetItem.id);
+                    }}
                     className="bg-white hover:bg-[#E8D5B0]/30 text-[#3A4F41] px-3 py-2 rounded-xl text-xs font-bold transition shadow-sm border border-[#7A8A6A]/40"
                   >
                     🔗 分享
@@ -1650,17 +1891,6 @@ VITE_SUPABASE_ANON_KEY=你的專案Anon_Key`}
               <button onClick={() => { setConfirmModalOpen(false); confirmConfig.onYes(); }} className="flex-1 px-4 py-2.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-xl">確定</button>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* 桌面版拖曳排序時，跟隨游標移動的浮動預覽卡片，讓使用者清楚看到正在移動哪個項目 */}
-      {dragPreview && (
-        <div
-          className="fixed z-[100] pointer-events-none hidden sm:flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#3A4F41] text-white text-xs font-bold shadow-2xl border-2 border-[#C0624A] rotate-2 transition-transform duration-75"
-          style={{ left: dragPreview.x + 18, top: dragPreview.y + 18 }}
-        >
-          {dragPreview.emoji && <span className="text-sm">{dragPreview.emoji}</span>}
-          <span className="max-w-[180px] truncate">{dragPreview.label}</span>
         </div>
       )}
 
